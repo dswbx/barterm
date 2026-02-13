@@ -38,7 +38,9 @@
         "alwaysOnTop": true,
         "skipTaskbar": true,
         "visible": false,
-        "center": false
+        "center": false,
+        "hiddenTitle": true,
+        "titleBarStyle": "Overlay"
       }
     ],
     "security": {

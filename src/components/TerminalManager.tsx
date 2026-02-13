@@ -3,6 +3,7 @@ import { Terminal, TerminalHandle } from './Terminal';
 import { TabBar } from './TabBar';
 import { usePty } from '../hooks/usePty';
 import { lightTheme, darkTheme, getSystemTheme, watchSystemTheme } from '../lib/theme';
+import { invoke } from '@tauri-apps/api/core';
 
 interface Tab {
   id: number;
@@ -47,6 +48,14 @@ export function TerminalManager() {
 
   const handleTabClick = useCallback((tabId: number) => {
     setActiveTabId(tabId);
+    // focus the terminal after switching tabs
+    setTimeout(() => {
+      terminalRefs.current.get(tabId)?.current?.focus();
+    }, 0);
+  }, []);
+
+  const handleCloseWindow = useCallback(() => {
+    invoke('close_window');
   }, []);
 
   // watch for system theme changes
@@ -72,11 +81,13 @@ export function TerminalManager() {
         e.preventDefault();
         handleNewTab();
       }
-      // Cmd+W - close tab
+      // Cmd+W - close tab or window
       else if (e.metaKey && e.key === 'w') {
         e.preventDefault();
         if (tabs.length > 1) {
           handleTabClose(activeTabId);
+        } else {
+          handleCloseWindow();
         }
       }
       // Cmd+1-9 - switch to tab
@@ -91,10 +102,19 @@ export function TerminalManager() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [tabs, activeTabId, handleNewTab, handleTabClose]);
+  }, [tabs, activeTabId, handleNewTab, handleTabClose, handleCloseWindow]);
 
   return (
-    <div className={`h-screen w-full flex flex-col ${isDark ? 'bg-gray-900' : 'bg-gray-100'}`}>
+    <div className={`h-screen w-full flex flex-col ${isDark ? 'bg-gray-900' : 'bg-gray-100'} relative`}>
+      {/* Close button */}
+      <button
+        onClick={handleCloseWindow}
+        className="absolute top-2 right-2 z-50 w-6 h-6 flex items-center justify-center rounded-full bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition-colors"
+        title="Close window (Cmd+W)"
+      >
+        ×
+      </button>
+      
       <TabBar
         tabs={tabs}
         activeTabId={activeTabId}

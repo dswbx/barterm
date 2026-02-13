@@ -12,6 +12,7 @@ interface TerminalProps {
 export interface TerminalHandle {
   write: (data: string) => void;
   setTheme: (theme: ITheme) => void;
+  focus: () => void;
 }
 
 export const Terminal = forwardRef<TerminalHandle, TerminalProps>(
@@ -37,6 +38,9 @@ export const Terminal = forwardRef<TerminalHandle, TerminalProps>(
 
     term.open(terminalRef.current);
     fitAddon.fit();
+    
+    // focus the terminal
+    term.focus();
 
     // send data to PTY when user types
     term.onData((data) => {
@@ -76,6 +80,9 @@ export const Terminal = forwardRef<TerminalHandle, TerminalProps>(
       if (xtermRef.current) {
         xtermRef.current.options.theme = newTheme;
       }
+    },
+    focus: () => {
+      xtermRef.current?.focus();
     },
   }));
 

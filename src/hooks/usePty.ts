@@ -54,7 +54,9 @@ export function usePty({ tabId, cols, rows, onData }: UsePtyOptions) {
 
   const write = useCallback(
     async (data: string) => {
-      if (!ptyRef.current) return;
+      if (!ptyRef.current) {
+        return;
+      }
       try {
         await ptyRef.current.write(data);
       } catch (err) {
