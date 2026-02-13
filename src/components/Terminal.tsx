@@ -1,0 +1,89 @@
+import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { Terminal as XTerm, ITheme } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
+import '@xterm/xterm/css/xterm.css';
+
+interface TerminalProps {
+  onData: (data: string) => void;
+  onResize: (cols: number, rows: number) => void;
+  theme: ITheme;
+}
+
+export interface TerminalHandle {
+  write: (data: string) => void;
+  setTheme: (theme: ITheme) => void;
+}
+
+export const Terminal = forwardRef<TerminalHandle, TerminalProps>(
+  ({ onData, onResize, theme }, ref) => {
+  const terminalRef = useRef<HTMLDivElement>(null);
+  const xtermRef = useRef<XTerm | null>(null);
+  const fitAddonRef = useRef<FitAddon | null>(null);
+
+  useEffect(() => {
+    if (!terminalRef.current) return;
+
+    // create xterm instance
+    const term = new XTerm({
+      fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+      fontSize: 13,
+      cursorBlink: true,
+      cursorStyle: 'block',
+      theme,
+    });
+
+    const fitAddon = new FitAddon();
+    term.loadAddon(fitAddon);
+
+    term.open(terminalRef.current);
+    fitAddon.fit();
+
+    // send data to PTY when user types
+    term.onData((data) => {
+      onData(data);
+    });
+
+    // notify parent of size changes
+    const { cols, rows } = term;
+    onResize(cols, rows);
+
+    xtermRef.current = term;
+    fitAddonRef.current = fitAddon;
+
+    // handle window resize
+    const handleResize = () => {
+      if (fitAddonRef.current && xtermRef.current) {
+        fitAddonRef.current.fit();
+        const { cols, rows } = xtermRef.current;
+        onResize(cols, rows);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      term.dispose();
+    };
+  }, []);
+
+  // expose methods to parent
+  useImperativeHandle(ref, () => ({
+    write: (data: string) => {
+      xtermRef.current?.write(data);
+    },
+    setTheme: (newTheme: ITheme) => {
+      if (xtermRef.current) {
+        xtermRef.current.options.theme = newTheme;
+      }
+    },
+  }));
+
+  return (
+    <div
+      ref={terminalRef}
+      className="w-full h-full"
+      style={{ padding: '8px' }}
+    />
+  );
+});
