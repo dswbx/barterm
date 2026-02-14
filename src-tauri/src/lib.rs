@@ -11,6 +11,18 @@ use tauri::ActivationPolicy;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+// set the alpha value of the NSWindow on macOS
+#[cfg(target_os = "macos")]
+fn apply_window_opacity(window: &tauri::WebviewWindow, opacity: f64) {
+    use objc::{msg_send, sel, sel_impl};
+
+    let opacity = opacity.clamp(0.1, 1.0);
+    let _ = window.with_webview(move |webview| unsafe {
+        let ns_win = webview.ns_window() as *mut objc::runtime::Object;
+        let _: () = msg_send![ns_win, setAlphaValue: opacity];
+    });
+}
+
 // command to hide the window
 #[tauri::command]
 fn close_window(app: AppHandle) {
@@ -100,13 +112,15 @@ fn show_settings(app: AppHandle) {
 #[tauri::command]
 fn open_config(app: AppHandle) {
     use tauri_plugin_opener::OpenerExt;
-    
+
     // get the path to settings.json
     if let Ok(app_data_dir) = app.path().app_data_dir() {
         let config_path = app_data_dir.join("settings.json");
-        
+
         // open with default editor
-        let _ = app.opener().open_path(config_path.to_string_lossy().to_string(), None::<&str>);
+        let _ = app
+            .opener()
+            .open_path(config_path.to_string_lossy().to_string(), None::<&str>);
     }
 }
 
@@ -125,7 +139,7 @@ fn get_config_path(app: AppHandle) -> String {
 #[tauri::command]
 fn get_settings(app: AppHandle) -> serde_json::Value {
     use std::fs;
-    
+
     // read the settings file directly
     if let Ok(app_data_dir) = app.path().app_data_dir() {
         let settings_path = app_data_dir.join("settings.json");
@@ -154,6 +168,15 @@ fn get_setting(app: AppHandle, key: String) -> Option<serde_json::Value> {
         return store.get(&key).map(|v| v.clone());
     }
     None
+}
+
+// command to set window opacity
+#[tauri::command]
+fn set_window_opacity(app: AppHandle, opacity: f64) {
+    #[cfg(target_os = "macos")]
+    if let Some(window) = app.get_webview_window("main") {
+        apply_window_opacity(&window, opacity);
+    }
 }
 
 // save current window size to store
@@ -232,7 +255,8 @@ pub fn run() {
             get_config_path,
             get_settings,
             set_setting,
-            get_setting
+            get_setting,
+            set_window_opacity
         ])
         .setup(|app| {
             // set activation policy to Accessory (hide dock icon on macOS)
@@ -254,6 +278,12 @@ pub fn run() {
                 // listen for resize events to save size (with debounce)
                 let app_handle = app.handle().clone();
                 let last_resize = Arc::new(Mutex::new(Instant::now()));
+
+                // restore saved window opacity
+                #[cfg(target_os = "macos")]
+                if let Some(opacity) = store.get("window_opacity").and_then(|v| v.as_f64()) {
+                    apply_window_opacity(&window, opacity);
+                }
 
                 window.on_window_event(move |event| {
                     if let tauri::WindowEvent::Resized(_) = event {
@@ -283,9 +313,10 @@ pub fn run() {
             // build tray menu
             let about_item = MenuItemBuilder::with_id("about", "About Barterm").build(app)?;
             let settings_item = MenuItemBuilder::with_id("settings", "Settings").build(app)?;
-            let open_config_item = MenuItemBuilder::with_id("open_config", "Open Config").build(app)?;
+            let open_config_item =
+                MenuItemBuilder::with_id("open_config", "Open Config").build(app)?;
             let quit_item = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
-            
+
             let menu = MenuBuilder::new(app)
                 .item(&about_item)
                 .item(&settings_item)
@@ -315,13 +346,15 @@ pub fn run() {
                     }
                     "open_config" => {
                         use tauri_plugin_opener::OpenerExt;
-                        
+
                         // get the path to settings.json
                         if let Ok(app_data_dir) = app.path().app_data_dir() {
                             let config_path = app_data_dir.join("settings.json");
-                            
+
                             // open with default editor
-                            let _ = app.opener().open_path(config_path.to_string_lossy().to_string(), None::<&str>);
+                            let _ = app
+                                .opener()
+                                .open_path(config_path.to_string_lossy().to_string(), None::<&str>);
                         }
                     }
                     "quit" => {

@@ -40,6 +40,12 @@ export function TerminalManager() {
 
    const notificationsEnabled = settings.notifications_enabled;
 
+   // apply window opacity when settings are loaded
+   useEffect(() => {
+      if (!settingsLoaded) return;
+      invoke("set_window_opacity", { opacity: settings.window_opacity });
+   }, [settingsLoaded]);
+
    // request notification permission after settings are loaded
    useEffect(() => {
       if (!settingsLoaded) return;
@@ -424,6 +430,44 @@ function Settings({ isDark, onClose }: SettingsProps) {
                         className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
                      >
                         Auto
+                     </div>
+                  </div>
+
+                  {/* Window Opacity Setting */}
+                  <div
+                     className={`flex items-start justify-between py-3 border-b ${isDark ? "border-[#3d3d3d]" : "border-[#d0d0d0]"}`}
+                  >
+                     <div className="flex-1">
+                        <div
+                           className={`text-sm font-medium ${isDark ? "text-white" : "text-black"}`}
+                        >
+                           Window Opacity
+                        </div>
+                        <div
+                           className={`text-xs mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                        >
+                           Adjust the transparency of the window
+                        </div>
+                     </div>
+                     <div className="flex items-center gap-3">
+                        <input
+                           type="range"
+                           min="0.1"
+                           max="1"
+                           step="0.01"
+                           value={settings.window_opacity}
+                           onChange={(e) => {
+                              const value = parseFloat(e.target.value);
+                              invoke("set_window_opacity", { opacity: value });
+                              updateSetting("window_opacity", value);
+                           }}
+                           className="w-24 accent-[#007AFF]"
+                        />
+                        <span
+                           className={`text-sm tabular-nums w-10 text-right ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                        >
+                           {Math.round(settings.window_opacity * 100)}%
+                        </span>
                      </div>
                   </div>
 
