@@ -2,66 +2,81 @@
 
 A modern macOS menubar terminal application built with Tauri v2, React, and TypeScript.
 
+![Barterm Screenshot](docs/screenshot.png)
+
 ## Features
 
 - **Menubar Integration**: Lives in your macOS menubar, accessible with a single click
 - **Multiple Tabs**: Support for multiple terminal sessions with easy tab management
+- **Smart Notifications**: Get notified when commands complete in background tabs
+- **Persistent Settings**: Window size and preferences automatically saved
 - **System Theme**: Automatically follows macOS light/dark mode
-- **Keyboard Shortcuts**: Fast navigation with keyboard shortcuts
+- **Keyboard Shortcuts**: Fast navigation with keyboard shortcuts (Cmd+T, Cmd+W, Cmd+1-9)
+- **Tray Menu**: Right-click for quick access to settings, config, and more
 - **Modern UI**: Clean, minimal interface with smooth animations
 
-## Keyboard Shortcuts
-
-- `Cmd+T` - New tab
-- `Cmd+W` - Close current tab
-- `Cmd+1-9` - Switch to tab 1-9
-
-## Prerequisites
-
-- [Rust](https://www.rust-lang.org/tools/install)
-- [Node.js](https://nodejs.org/) (v18 or later)
-- macOS 10.15 or later
-
-## Development
-
-Install dependencies:
+## Quick Start
 
 ```bash
+# Install dependencies
 npm install
-```
 
-Run in development mode:
-
-```bash
+# Run in development mode
 npm run tauri:dev
-```
 
-## Build
-
-Build the application:
-
-```bash
+# Build for production
 npm run tauri:build
 ```
 
-The built app will be in `src-tauri/target/release/bundle/`.
+## Documentation
+
+- **[Architecture](docs/ARCHITECTURE.md)** - Technical architecture and component overview
+- **[Development Guide](docs/DEVELOPMENT.md)** - Setup, development workflow, and contributing
+- **[Settings System](docs/SETTINGS.md)** - How to add and manage settings
+- **[Keyboard Shortcuts](docs/KEYBOARD_SHORTCUTS.md)** - Complete list of shortcuts
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Implementation Details](docs/IMPLEMENTATION.md)** - Technical implementation notes
+- **[Notification Behavior](docs/NOTIFICATION_BEHAVIOR.md)** - How notifications work
+
+## Requirements
+
+- macOS 10.15 or later
+- [Rust](https://www.rust-lang.org/tools/install) (for development)
+- [Node.js](https://nodejs.org/) v18+ (for development)
 
 ## Tech Stack
 
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS
 - **Terminal**: xterm.js v6 with fit addon
 - **Backend**: Tauri v2 (Rust)
-- **PTY**: tauri-plugin-pty
+- **Plugins**: PTY, Store, Notifications, Shell
 
-## Architecture
+## Usage
 
-The app uses a system tray icon that toggles a popover window. The window contains a React app with:
+### Tray Icon
+- **Left-click**: Toggle window visibility
+- **Right-click**: Open context menu (About, Settings, Open Config, Quit)
 
-- Tab bar for managing multiple terminal sessions
-- xterm.js instances (one per tab, kept alive when hidden)
-- PTY backend in Rust that spawns shell processes
+### Keyboard Shortcuts
+- `Cmd+T` - New tab
+- `Cmd+W` - Close tab (or window if last tab)
+- `Cmd+1-9` - Switch to tab 1-9
 
-Terminal sessions persist while the app is running but are not saved between restarts.
+See [KEYBOARD_SHORTCUTS.md](docs/KEYBOARD_SHORTCUTS.md) for complete list.
+
+## Settings
+
+Settings are stored in `~/Library/Application Support/com.barterm.app/settings.json`
+
+Access via:
+- Right-click tray icon → Settings
+- Right-click tray icon → Open Config (opens in default editor)
+
+See [SETTINGS.md](docs/SETTINGS.md) for how to add new settings.
+
+## Contributing
+
+Contributions are welcome! Please see [DEVELOPMENT.md](docs/DEVELOPMENT.md) for setup and guidelines.
 
 ## License
 
