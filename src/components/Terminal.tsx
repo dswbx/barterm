@@ -41,7 +41,7 @@ export const Terminal = forwardRef<TerminalHandle, TerminalProps>(
          term.loadAddon(fitAddon);
 
          term.open(terminalRef.current);
-         
+
          // fit the terminal after a short delay to ensure proper layout
          setTimeout(() => {
             fitAddon.fit();
@@ -99,6 +99,8 @@ export const Terminal = forwardRef<TerminalHandle, TerminalProps>(
          },
       }));
 
-      return <div ref={terminalRef} className="w-full h-full p-2 pr-1.5" />;
+      return (
+         <div ref={terminalRef} className="w-full h-full p-2 pl-2.5 pr-1.5" />
+      );
    }
 );

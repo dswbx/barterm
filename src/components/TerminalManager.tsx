@@ -243,7 +243,7 @@ export function TerminalManager() {
 
    return (
       <div
-         className={`h-screen w-full flex flex-col ${isDark ? "bg-gray-900" : "bg-gray-100"} fixed overflow-hidden overscroll-none`}
+         className={`h-screen w-full flex flex-col ${isDark ? "bg-gray-900" : "bg-gray-100"} fixed overflow-hidden overscroll-none rounded-xl`}
       >
          {showSettings ? (
             <Settings isDark={isDark} onClose={() => setShowSettings(false)} />

@@ -26,6 +26,7 @@
       }
    },
    "app": {
+      "macOSPrivateApi": true,
       "windows": [
          {
             "label": "main",
@@ -37,7 +38,7 @@
             "resizable": true,
             "fullscreen": false,
             "decorations": false,
-            "transparent": false,
+            "transparent": true,
             "alwaysOnTop": true,
             "skipTaskbar": true,
             "visible": false,
