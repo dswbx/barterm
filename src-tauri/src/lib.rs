@@ -99,14 +99,14 @@ fn show_settings(app: AppHandle) {
 // command to open config file
 #[tauri::command]
 fn open_config(app: AppHandle) {
-    use tauri_plugin_shell::ShellExt;
+    use tauri_plugin_opener::OpenerExt;
     
     // get the path to settings.json
     if let Ok(app_data_dir) = app.path().app_data_dir() {
         let config_path = app_data_dir.join("settings.json");
         
         // open with default editor
-        let _ = app.shell().open(config_path.to_string_lossy().to_string(), None);
+        let _ = app.opener().open_path(config_path.to_string_lossy().to_string(), None::<&str>);
     }
 }
 
@@ -216,6 +216,7 @@ fn toggle_window(app: &AppHandle<Wry>, tray_icon: &tauri::tray::TrayIcon) {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_pty::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_notification::init())
@@ -313,14 +314,14 @@ pub fn run() {
                         }
                     }
                     "open_config" => {
-                        use tauri_plugin_shell::ShellExt;
+                        use tauri_plugin_opener::OpenerExt;
                         
                         // get the path to settings.json
                         if let Ok(app_data_dir) = app.path().app_data_dir() {
                             let config_path = app_data_dir.join("settings.json");
                             
                             // open with default editor
-                            let _ = app.shell().open(config_path.to_string_lossy().to_string(), None);
+                            let _ = app.opener().open_path(config_path.to_string_lossy().to_string(), None::<&str>);
                         }
                     }
                     "quit" => {
