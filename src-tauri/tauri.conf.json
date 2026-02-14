@@ -18,6 +18,9 @@
          "icons/icon.icns",
          "icons/icon.ico"
       ],
+      "resources": [
+         "icons/icon-badge.png"
+      ],
       "macOS": {
          "minimumSystemVersion": "10.15"
       }
@@ -44,7 +47,28 @@
          }
       ],
       "security": {
-         "csp": null
+         "csp": null,
+         "capabilities": [
+            {
+               "identifier": "main-capability",
+               "windows": ["main"],
+               "permissions": [
+                  "core:default",
+                  "shell:default",
+                  "notification:default",
+                  "notification:allow-is-permission-granted",
+                  "notification:allow-request-permission",
+                  "notification:allow-notify",
+                  "notification:allow-register-action-types",
+                  "notification:allow-register-listener",
+                  "pty:default",
+                  "pty:allow-spawn",
+                  "pty:allow-write",
+                  "pty:allow-resize",
+                  "pty:allow-kill"
+               ]
+            }
+         ]
       },
       "trayIcon": {
          "iconPath": "icons/icon.png",

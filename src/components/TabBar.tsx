@@ -1,6 +1,7 @@
 interface Tab {
    id: number;
    title: string;
+   hasBell?: boolean;
 }
 
 interface TabBarProps {
@@ -27,7 +28,7 @@ export function TabBar({
                key={tab.id}
                className={`
             flex items-center justify-center gap-2 px-2 py-0.5 rounded-md cursor-pointer
-            transition-colors duration-150
+            transition-colors duration-150 relative
             ${
                activeTabId === tab.id
                   ? "bg-zinc-800 dark:bg-zinc-800 text-white"
@@ -39,6 +40,9 @@ export function TabBar({
                <span className="text-xs font-mono select-none">
                   {tab.title}
                </span>
+               {tab.hasBell && (
+                  <span className="w-1.5 h-1.5 bg-red-500 rounded-full" title="Unread bell" />
+               )}
                {tabs.length > 1 && (
                   <button
                      className="text-zinc-500 hover:text-white transition-colors text-base leading-none"

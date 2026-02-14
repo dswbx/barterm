@@ -20,6 +20,51 @@ fn close_window(app: AppHandle) {
     }
 }
 
+// command to show the window
+#[tauri::command]
+fn show_window(app: AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
+// command to check if window is visible
+#[tauri::command]
+fn is_window_visible(app: AppHandle) -> bool {
+    if let Some(window) = app.get_webview_window("main") {
+        window.is_visible().unwrap_or(false)
+    } else {
+        false
+    }
+}
+
+// command to set tray icon badge (for unread notifications)
+#[tauri::command]
+fn set_tray_badge(app: AppHandle, has_unread: bool) {
+    use tauri::image::Image;
+    
+    // get the tray icon from app state
+    if let Some(tray) = app.try_state::<tauri::tray::TrayIcon>() {
+        if has_unread {
+            // load the badge icon
+            let icon_path = app.path().resource_dir()
+                .ok()
+                .and_then(|dir| Some(dir.join("icons/icon-badge.png")))
+                .and_then(|path| Image::from_path(&path).ok());
+            
+            if let Some(icon) = icon_path {
+                let _ = tray.set_icon(Some(icon));
+            }
+        } else {
+            // restore the original icon
+            if let Some(default_icon) = app.default_window_icon() {
+                let _ = tray.set_icon(Some(default_icon.clone()));
+            }
+        }
+    }
+}
+
 // command to save window size (can be called from frontend)
 #[tauri::command]
 fn save_size(app: AppHandle) {
@@ -51,9 +96,9 @@ fn toggle_window(app: &AppHandle<Wry>, tray_icon: &tauri::tray::TrayIcon) {
         } else {
             // position window below tray icon
             if let Ok(Some(tray_rect)) = tray_icon.rect() {
-                let window_size = window.outer_size().unwrap_or_else(|_| {
-                    PhysicalSize::new(600, 400)
-                });
+                let window_size = window
+                    .outer_size()
+                    .unwrap_or_else(|_| PhysicalSize::new(600, 400));
 
                 // extract position and size from rect
                 let tauri::Rect { position, size } = tray_rect;
@@ -83,7 +128,14 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_pty::init())
         .plugin(tauri_plugin_store::Builder::new().build())
-        .invoke_handler(tauri::generate_handler![close_window, save_size])
+        .plugin(tauri_plugin_notification::init())
+        .invoke_handler(tauri::generate_handler![
+            close_window,
+            save_size,
+            show_window,
+            is_window_visible,
+            set_tray_badge
+        ])
         .setup(|app| {
             // set activation policy to Accessory (hide dock icon on macOS)
             #[cfg(target_os = "macos")]
@@ -91,7 +143,7 @@ pub fn run() {
 
             // initialize store
             let store = app.store("settings.json").expect("failed to create store");
-            
+
             // restore saved window size
             if let Some(window) = app.get_webview_window("main") {
                 if let Some(width) = store.get("window_width").and_then(|v| v.as_u64()) {
@@ -100,25 +152,25 @@ pub fn run() {
                         let _ = window.set_size(size);
                     }
                 }
-                
+
                 // listen for resize events to save size (with debounce)
                 let app_handle = app.handle().clone();
                 let last_resize = Arc::new(Mutex::new(Instant::now()));
-                
+
                 window.on_window_event(move |event| {
                     if let tauri::WindowEvent::Resized(_) = event {
                         let mut last = last_resize.lock().unwrap();
                         *last = Instant::now();
-                        
+
                         // clone for the async task
                         let app_clone = app_handle.clone();
                         let last_clone = Arc::clone(&last_resize);
-                        
+
                         // wait 500ms before saving to debounce rapid resize events
                         std::thread::spawn(move || {
                             std::thread::sleep(Duration::from_millis(500));
                             let elapsed = last_clone.lock().unwrap().elapsed();
-                            
+
                             // only save if no resize happened in the last 500ms
                             if elapsed >= Duration::from_millis(500) {
                                 if let Some(window) = app_clone.get_webview_window("main") {

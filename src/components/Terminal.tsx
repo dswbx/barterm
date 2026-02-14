@@ -6,6 +6,7 @@ import "@xterm/xterm/css/xterm.css";
 interface TerminalProps {
    onData: (data: string) => void;
    onResize: (cols: number, rows: number) => void;
+   onBell?: () => void;
    theme: ITheme;
 }
 
@@ -16,7 +17,7 @@ export interface TerminalHandle {
 }
 
 export const Terminal = forwardRef<TerminalHandle, TerminalProps>(
-   ({ onData, onResize, theme }, ref) => {
+   ({ onData, onResize, onBell, theme }, ref) => {
       const terminalRef = useRef<HTMLDivElement>(null);
       const xtermRef = useRef<XTerm | null>(null);
       const fitAddonRef = useRef<FitAddon | null>(null);
@@ -39,22 +40,29 @@ export const Terminal = forwardRef<TerminalHandle, TerminalProps>(
          const fitAddon = new FitAddon();
          term.loadAddon(fitAddon);
 
-      term.open(terminalRef.current);
-      
-      // fit the terminal after a short delay to ensure proper layout
-      setTimeout(() => {
-         fitAddon.fit();
-         const { cols, rows } = term;
-         onResize(cols, rows);
-      }, 0);
+         term.open(terminalRef.current);
+         
+         // fit the terminal after a short delay to ensure proper layout
+         setTimeout(() => {
+            fitAddon.fit();
+            const { cols, rows } = term;
+            onResize(cols, rows);
+         }, 0);
 
-      // focus the terminal
-      term.focus();
+         // focus the terminal
+         term.focus();
 
-      // send data to PTY when user types
-      term.onData((data) => {
-         onData(data);
-      });
+         // send data to PTY when user types
+         term.onData((data) => {
+            onData(data);
+         });
+
+         // listen for bell events
+         if (onBell) {
+            term.onBell(() => {
+               onBell();
+            });
+         }
 
          xtermRef.current = term;
          fitAddonRef.current = fitAddon;

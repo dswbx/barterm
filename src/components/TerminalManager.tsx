@@ -9,16 +9,18 @@ import {
    watchSystemTheme,
 } from "../lib/theme";
 import { invoke } from "@tauri-apps/api/core";
+import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
 
 interface Tab {
    id: number;
    title: string;
    ptyId: number | null;
+   hasBell: boolean;
 }
 
 export function TerminalManager() {
    const [tabs, setTabs] = useState<Tab[]>([
-      { id: 1, title: "Terminal 1", ptyId: null },
+      { id: 1, title: "Terminal 1", ptyId: null, hasBell: false },
    ]);
    const [activeTabId, setActiveTabId] = useState(1);
    const [nextTabId, setNextTabId] = useState(2);
@@ -27,11 +29,24 @@ export function TerminalManager() {
       new Map()
    );
 
+   // request notification permission on mount
+   useEffect(() => {
+      const requestNotificationPermission = async () => {
+         let permissionGranted = await isPermissionGranted();
+         if (!permissionGranted) {
+            const permission = await requestPermission();
+            permissionGranted = permission === "granted";
+         }
+      };
+      requestNotificationPermission();
+   }, []);
+
    const handleNewTab = useCallback(() => {
       const newTab: Tab = {
          id: nextTabId,
          title: `Terminal ${nextTabId}`,
          ptyId: null,
+         hasBell: false,
       };
       setTabs((prev) => [...prev, newTab]);
       setActiveTabId(nextTabId);
@@ -64,11 +79,61 @@ export function TerminalManager() {
 
    const handleTabClick = useCallback((tabId: number) => {
       setActiveTabId(tabId);
+      // clear bell state when tab is clicked
+      setTabs((prev) =>
+         prev.map((tab) =>
+            tab.id === tabId ? { ...tab, hasBell: false } : tab
+         )
+      );
       // focus the terminal after switching tabs
       setTimeout(() => {
          terminalRefs.current.get(tabId)?.current?.focus();
       }, 0);
+      
+      // clear tray badge if no tabs have bells
+      setTimeout(() => {
+         setTabs((currentTabs) => {
+            const hasAnyBells = currentTabs.some((t) => t.hasBell);
+            if (!hasAnyBells) {
+               invoke("set_tray_badge", { hasUnread: false });
+            }
+            return currentTabs;
+         });
+      }, 100);
    }, []);
+
+   const handleBell = useCallback(async (tabId: number) => {
+      const tab = tabs.find((t) => t.id === tabId);
+      if (!tab) return;
+
+      // check if window is visible
+      const isVisible = await invoke<boolean>("is_window_visible");
+
+      // show notification if window is hidden OR if tab is not active
+      const shouldNotify = !isVisible || tabId !== activeTabId;
+      
+      if (shouldNotify) {
+         // set bell state (only if tab is not active)
+         if (tabId !== activeTabId) {
+            setTabs((prev) =>
+               prev.map((t) => (t.id === tabId ? { ...t, hasBell: true } : t))
+            );
+         }
+
+         // send notification
+         const permissionGranted = await isPermissionGranted();
+         if (permissionGranted) {
+            const notificationBody = isVisible ? `Activity in ${tab.title}` : "Terminal activity";
+            sendNotification({
+               title: "Terminal Bell",
+               body: notificationBody,
+            });
+         }
+
+         // update tray icon badge
+         await invoke("set_tray_badge", { hasUnread: true });
+      }
+   }, [tabs, activeTabId]);
 
    const handleCloseWindow = useCallback(() => {
       invoke("close_window");
@@ -87,6 +152,27 @@ export function TerminalManager() {
       });
 
       return unwatch;
+   }, []);
+
+   // clear tray badge when window becomes visible
+   useEffect(() => {
+      const handleVisibilityChange = async () => {
+         const isVisible = await invoke<boolean>("is_window_visible");
+         if (isVisible) {
+            // clear tray badge when window is shown
+            await invoke("set_tray_badge", { hasUnread: false });
+         }
+      };
+
+      // check on mount and when window focus changes
+      handleVisibilityChange();
+      
+      // listen for window focus
+      window.addEventListener("focus", handleVisibilityChange);
+      
+      return () => {
+         window.removeEventListener("focus", handleVisibilityChange);
+      };
    }, []);
 
    // keyboard shortcuts
@@ -156,6 +242,7 @@ export function TerminalManager() {
                      isActive={tab.id === activeTabId}
                      theme={isDark ? darkTheme : lightTheme}
                      terminalRef={terminalRefs.current.get(tab.id)!}
+                     onBell={() => handleBell(tab.id)}
                   />
                );
             })}
@@ -169,6 +256,7 @@ interface TerminalTabProps {
    isActive: boolean;
    theme: any;
    terminalRef: React.RefObject<TerminalHandle>;
+   onBell: () => void;
 }
 
 function TerminalTab({
@@ -176,6 +264,7 @@ function TerminalTab({
    isActive,
    theme,
    terminalRef,
+   onBell,
 }: TerminalTabProps) {
    const { write, resize } = usePty({
       tabId,
@@ -203,6 +292,7 @@ function TerminalTab({
             ref={terminalRef}
             onData={handleData}
             onResize={handleResize}
+            onBell={onBell}
             theme={theme}
          />
       </div>
