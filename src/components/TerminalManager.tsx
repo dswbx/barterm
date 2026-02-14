@@ -9,7 +9,11 @@ import {
    watchSystemTheme,
 } from "../lib/theme";
 import { invoke } from "@tauri-apps/api/core";
-import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
+import {
+   isPermissionGranted,
+   requestPermission,
+   sendNotification,
+} from "@tauri-apps/plugin-notification";
 import { listen } from "@tauri-apps/api/event";
 import { Switch } from "@base-ui/react/switch";
 import { useSettings } from "../contexts/SettingsContext";
@@ -22,7 +26,7 @@ interface Tab {
 }
 
 export function TerminalManager() {
-   const { settings, updateSetting, isLoaded: settingsLoaded } = useSettings();
+   const { settings, isLoaded: settingsLoaded } = useSettings();
    const [tabs, setTabs] = useState<Tab[]>([
       { id: 1, title: "Terminal 1", ptyId: null, hasBell: false },
    ]);
@@ -39,7 +43,7 @@ export function TerminalManager() {
    // request notification permission after settings are loaded
    useEffect(() => {
       if (!settingsLoaded) return;
-      
+
       const requestNotificationPermission = async () => {
          if (notificationsEnabled) {
             let permissionGranted = await isPermissionGranted();
@@ -111,7 +115,7 @@ export function TerminalManager() {
       setTimeout(() => {
          terminalRefs.current.get(tabId)?.current?.focus();
       }, 0);
-      
+
       // clear tray badge if no tabs have bells
       setTimeout(() => {
          setTabs((currentTabs) => {
@@ -124,40 +128,47 @@ export function TerminalManager() {
       }, 100);
    }, []);
 
-   const handleBell = useCallback(async (tabId: number) => {
-      const tab = tabs.find((t) => t.id === tabId);
-      if (!tab) return;
+   const handleBell = useCallback(
+      async (tabId: number) => {
+         const tab = tabs.find((t) => t.id === tabId);
+         if (!tab) return;
 
-      // check if window is visible
-      const isVisible = await invoke<boolean>("is_window_visible");
+         // check if window is visible
+         const isVisible = await invoke<boolean>("is_window_visible");
 
-      // show notification if window is hidden OR if tab is not active
-      const shouldNotify = !isVisible || tabId !== activeTabId;
-      
-      if (shouldNotify) {
-         // set bell state (only if tab is not active)
-         if (tabId !== activeTabId) {
-            setTabs((prev) =>
-               prev.map((t) => (t.id === tabId ? { ...t, hasBell: true } : t))
-            );
-         }
+         // show notification if window is hidden OR if tab is not active
+         const shouldNotify = !isVisible || tabId !== activeTabId;
 
-         // send notification only if enabled
-         if (notificationsEnabled) {
-            const permissionGranted = await isPermissionGranted();
-            if (permissionGranted) {
-               const notificationBody = isVisible ? `Activity in ${tab.title}` : "Terminal activity";
-               sendNotification({
-                  title: "Terminal Bell",
-                  body: notificationBody,
-               });
+         if (shouldNotify) {
+            // set bell state (only if tab is not active)
+            if (tabId !== activeTabId) {
+               setTabs((prev) =>
+                  prev.map((t) =>
+                     t.id === tabId ? { ...t, hasBell: true } : t
+                  )
+               );
             }
-         }
 
-         // update tray icon badge
-         await invoke("set_tray_badge", { hasUnread: true });
-      }
-   }, [tabs, activeTabId, notificationsEnabled]);
+            // send notification only if enabled
+            if (notificationsEnabled) {
+               const permissionGranted = await isPermissionGranted();
+               if (permissionGranted) {
+                  const notificationBody = isVisible
+                     ? `Activity in ${tab.title}`
+                     : "Terminal activity";
+                  sendNotification({
+                     title: "Terminal Bell",
+                     body: notificationBody,
+                  });
+               }
+            }
+
+            // update tray icon badge
+            await invoke("set_tray_badge", { hasUnread: true });
+         }
+      },
+      [tabs, activeTabId, notificationsEnabled]
+   );
 
    const handleCloseWindow = useCallback(() => {
       invoke("close_window");
@@ -190,10 +201,10 @@ export function TerminalManager() {
 
       // check on mount and when window focus changes
       handleVisibilityChange();
-      
+
       // listen for window focus
       window.addEventListener("focus", handleVisibilityChange);
-      
+
       return () => {
          window.removeEventListener("focus", handleVisibilityChange);
       };
@@ -235,10 +246,7 @@ export function TerminalManager() {
          className={`h-screen w-full flex flex-col ${isDark ? "bg-gray-900" : "bg-gray-100"} fixed overflow-hidden overscroll-none`}
       >
          {showSettings ? (
-            <Settings 
-               isDark={isDark} 
-               onClose={() => setShowSettings(false)}
-            />
+            <Settings isDark={isDark} onClose={() => setShowSettings(false)} />
          ) : (
             <>
                {tabs.length > 1 && (
@@ -264,7 +272,10 @@ export function TerminalManager() {
                <div className="flex-1 relative pb-1">
                   {tabs.map((tab) => {
                      if (!terminalRefs.current.has(tab.id)) {
-                        terminalRefs.current.set(tab.id, createRef<TerminalHandle>());
+                        terminalRefs.current.set(
+                           tab.id,
+                           createRef<TerminalHandle>()
+                        );
                      }
                      return (
                         <TerminalTab
@@ -345,9 +356,13 @@ function Settings({ isDark, onClose }: SettingsProps) {
    };
 
    return (
-      <div className={`h-full w-full flex ${isDark ? "bg-[#1e1e1e]" : "bg-[#ececec]"}`}>
+      <div
+         className={`h-full w-full flex ${isDark ? "bg-[#1e1e1e]" : "bg-[#ececec]"}`}
+      >
          {/* Sidebar */}
-         <div className={`w-48 flex-shrink-0 ${isDark ? "bg-[#2d2d2d]" : "bg-[#e3e3e3]"} border-r ${isDark ? "border-[#3d3d3d]" : "border-[#d0d0d0]"}`}>
+         <div
+            className={`w-48 flex-shrink-0 ${isDark ? "bg-[#2d2d2d]" : "bg-[#e3e3e3]"} border-r ${isDark ? "border-[#3d3d3d]" : "border-[#d0d0d0]"}`}
+         >
             <div className="p-4">
                <button
                   onClick={onClose}
@@ -357,7 +372,9 @@ function Settings({ isDark, onClose }: SettingsProps) {
                   <span>Terminal</span>
                </button>
                <nav className="space-y-1">
-                  <div className={`px-3 py-2 rounded-md text-sm font-medium ${isDark ? "bg-[#3d3d3d] text-white" : "bg-white text-black"}`}>
+                  <div
+                     className={`px-3 py-2 rounded-md text-sm font-medium ${isDark ? "bg-[#3d3d3d] text-white" : "bg-white text-black"}`}
+                  >
                      General
                   </div>
                </nav>
@@ -367,8 +384,12 @@ function Settings({ isDark, onClose }: SettingsProps) {
          {/* Main Content */}
          <div className="flex-1 flex flex-col">
             {/* Header */}
-            <div className={`px-6 py-4 border-b ${isDark ? "border-[#3d3d3d]" : "border-[#d0d0d0]"} flex items-center justify-between`}>
-               <h1 className={`text-xl font-semibold ${isDark ? "text-white" : "text-black"}`}>
+            <div
+               className={`px-6 py-4 border-b ${isDark ? "border-[#3d3d3d]" : "border-[#d0d0d0]"} flex items-center justify-between`}
+            >
+               <h1
+                  className={`text-xl font-semibold ${isDark ? "text-white" : "text-black"}`}
+               >
                   General
                </h1>
                <button
@@ -384,56 +405,82 @@ function Settings({ isDark, onClose }: SettingsProps) {
             <div className="flex-1 overflow-y-auto px-6 py-6">
                <div className="max-w-3xl space-y-6">
                   {/* Theme Setting */}
-                  <div className={`flex items-start justify-between py-3 border-b ${isDark ? "border-[#3d3d3d]" : "border-[#d0d0d0]"}`}>
+                  <div
+                     className={`flex items-start justify-between py-3 border-b ${isDark ? "border-[#3d3d3d]" : "border-[#d0d0d0]"}`}
+                  >
                      <div className="flex-1">
-                        <div className={`text-sm font-medium ${isDark ? "text-white" : "text-black"}`}>
+                        <div
+                           className={`text-sm font-medium ${isDark ? "text-white" : "text-black"}`}
+                        >
                            Appearance
                         </div>
-                        <div className={`text-xs mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+                        <div
+                           className={`text-xs mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                        >
                            Follows system theme
                         </div>
                      </div>
-                     <div className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+                     <div
+                        className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                     >
                         Auto
                      </div>
                   </div>
 
                   {/* Notifications Setting */}
-                  <div className={`flex items-start justify-between py-3 border-b ${isDark ? "border-[#3d3d3d]" : "border-[#d0d0d0]"}`}>
+                  <div
+                     className={`flex items-start justify-between py-3 border-b ${isDark ? "border-[#3d3d3d]" : "border-[#d0d0d0]"}`}
+                  >
                      <div className="flex-1">
-                        <div className={`text-sm font-medium ${isDark ? "text-white" : "text-black"}`}>
+                        <div
+                           className={`text-sm font-medium ${isDark ? "text-white" : "text-black"}`}
+                        >
                            Notifications
                         </div>
-                        <div className={`text-xs mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+                        <div
+                           className={`text-xs mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                        >
                            Show terminal bell notifications
                         </div>
                      </div>
                      <Switch.Root
                         checked={notificationsEnabled}
-                        onCheckedChange={(checked) => updateSetting("notifications_enabled", checked)}
+                        onCheckedChange={(checked) =>
+                           updateSetting("notifications_enabled", checked)
+                        }
                         className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
                         style={{
-                           backgroundColor: notificationsEnabled 
-                              ? '#007AFF' 
-                              : isDark ? '#3d3d3d' : '#d0d0d0'
+                           backgroundColor: notificationsEnabled
+                              ? "#007AFF"
+                              : isDark
+                                ? "#3d3d3d"
+                                : "#d0d0d0",
                         }}
                      >
                         <Switch.Thumb
                            className="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform"
                            style={{
-                              transform: notificationsEnabled ? 'translateX(22px)' : 'translateX(2px)'
+                              transform: notificationsEnabled
+                                 ? "translateX(22px)"
+                                 : "translateX(2px)",
                            }}
                         />
                      </Switch.Root>
                   </div>
 
                   {/* Window Size Setting */}
-                  <div className={`flex items-start justify-between py-3 border-b ${isDark ? "border-[#3d3d3d]" : "border-[#d0d0d0]"}`}>
+                  <div
+                     className={`flex items-start justify-between py-3 border-b ${isDark ? "border-[#3d3d3d]" : "border-[#d0d0d0]"}`}
+                  >
                      <div className="flex-1">
-                        <div className={`text-sm font-medium ${isDark ? "text-white" : "text-black"}`}>
+                        <div
+                           className={`text-sm font-medium ${isDark ? "text-white" : "text-black"}`}
+                        >
                            Window Size
                         </div>
-                        <div className={`text-xs mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+                        <div
+                           className={`text-xs mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                        >
                            Automatically saved when resized
                         </div>
                      </div>
@@ -441,15 +488,23 @@ function Settings({ isDark, onClose }: SettingsProps) {
 
                   {/* About Section */}
                   <div className="pt-6">
-                     <div className={`text-xs font-medium uppercase tracking-wider mb-3 ${isDark ? "text-gray-500" : "text-gray-500"}`}>
+                     <div
+                        className={`text-xs font-medium uppercase tracking-wider mb-3 ${isDark ? "text-gray-500" : "text-gray-500"}`}
+                     >
                         About
                      </div>
-                     <div className={`flex items-start justify-between py-3 border-b ${isDark ? "border-[#3d3d3d]" : "border-[#d0d0d0]"}`}>
+                     <div
+                        className={`flex items-start justify-between py-3 border-b ${isDark ? "border-[#3d3d3d]" : "border-[#d0d0d0]"}`}
+                     >
                         <div className="flex-1">
-                           <div className={`text-sm font-medium ${isDark ? "text-white" : "text-black"}`}>
+                           <div
+                              className={`text-sm font-medium ${isDark ? "text-white" : "text-black"}`}
+                           >
                               Barterm
                            </div>
-                           <div className={`text-xs mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+                           <div
+                              className={`text-xs mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                           >
                               Version 0.1.0
                            </div>
                         </div>
