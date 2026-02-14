@@ -39,20 +39,22 @@ export const Terminal = forwardRef<TerminalHandle, TerminalProps>(
          const fitAddon = new FitAddon();
          term.loadAddon(fitAddon);
 
-         term.open(terminalRef.current);
+      term.open(terminalRef.current);
+      
+      // fit the terminal after a short delay to ensure proper layout
+      setTimeout(() => {
          fitAddon.fit();
-
-         // focus the terminal
-         term.focus();
-
-         // send data to PTY when user types
-         term.onData((data) => {
-            onData(data);
-         });
-
-         // notify parent of size changes
          const { cols, rows } = term;
          onResize(cols, rows);
+      }, 0);
+
+      // focus the terminal
+      term.focus();
+
+      // send data to PTY when user types
+      term.onData((data) => {
+         onData(data);
+      });
 
          xtermRef.current = term;
          fitAddonRef.current = fitAddon;
