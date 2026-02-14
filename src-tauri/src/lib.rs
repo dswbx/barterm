@@ -1,6 +1,7 @@
 use tauri::{
+    menu::{MenuBuilder, MenuItemBuilder},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Manager, PhysicalPosition, PhysicalSize, Wry,
+    AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, Wry,
 };
 use tauri_plugin_store::StoreExt;
 
@@ -43,16 +44,18 @@ fn is_window_visible(app: AppHandle) -> bool {
 #[tauri::command]
 fn set_tray_badge(app: AppHandle, has_unread: bool) {
     use tauri::image::Image;
-    
+
     // get the tray icon from app state
     if let Some(tray) = app.try_state::<tauri::tray::TrayIcon>() {
         if has_unread {
             // load the badge icon
-            let icon_path = app.path().resource_dir()
+            let icon_path = app
+                .path()
+                .resource_dir()
                 .ok()
                 .and_then(|dir| Some(dir.join("icons/icon-badge.png")))
                 .and_then(|path| Image::from_path(&path).ok());
-            
+
             if let Some(icon) = icon_path {
                 let _ = tray.set_icon(Some(icon));
             }
@@ -71,6 +74,86 @@ fn save_size(app: AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         save_window_size(&app, &window);
     }
+}
+
+// command to show about window
+#[tauri::command]
+fn show_about(app: AppHandle) {
+    if let Some(window) = app.get_webview_window("about") {
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
+// command to show settings view
+#[tauri::command]
+fn show_settings(app: AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        // emit event to frontend to switch to settings view
+        let _ = window.emit("show-settings", ());
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
+// command to open config file
+#[tauri::command]
+fn open_config(app: AppHandle) {
+    use tauri_plugin_shell::ShellExt;
+    
+    // get the path to settings.json
+    if let Ok(app_data_dir) = app.path().app_data_dir() {
+        let config_path = app_data_dir.join("settings.json");
+        
+        // open with default editor
+        let _ = app.shell().open(config_path.to_string_lossy().to_string(), None);
+    }
+}
+
+// command to get config path for debugging
+#[tauri::command]
+fn get_config_path(app: AppHandle) -> String {
+    if let Ok(app_data_dir) = app.path().app_data_dir() {
+        let config_path = app_data_dir.join("settings.json");
+        config_path.to_string_lossy().to_string()
+    } else {
+        "Error getting path".to_string()
+    }
+}
+
+// command to get all settings
+#[tauri::command]
+fn get_settings(app: AppHandle) -> serde_json::Value {
+    use std::fs;
+    
+    // read the settings file directly
+    if let Ok(app_data_dir) = app.path().app_data_dir() {
+        let settings_path = app_data_dir.join("settings.json");
+        if let Ok(contents) = fs::read_to_string(settings_path) {
+            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&contents) {
+                return json;
+            }
+        }
+    }
+    serde_json::json!({})
+}
+
+// command to set a setting value
+#[tauri::command]
+fn set_setting(app: AppHandle, key: String, value: serde_json::Value) {
+    if let Ok(store) = app.store("settings.json") {
+        let _ = store.set(key, value);
+        let _ = store.save();
+    }
+}
+
+// command to get a single setting value
+#[tauri::command]
+fn get_setting(app: AppHandle, key: String) -> Option<serde_json::Value> {
+    if let Ok(store) = app.store("settings.json") {
+        return store.get(&key).map(|v| v.clone());
+    }
+    None
 }
 
 // save current window size to store
@@ -118,7 +201,7 @@ fn toggle_window(app: &AppHandle<Wry>, tray_icon: &tauri::tray::TrayIcon) {
 
             let _ = window.show();
             let _ = window.set_focus();
-            
+
             // clear tray badge when showing window
             if let Some(tray) = app.try_state::<tauri::tray::TrayIcon>() {
                 if let Some(default_icon) = app.default_window_icon() {
@@ -141,7 +224,14 @@ pub fn run() {
             save_size,
             show_window,
             is_window_visible,
-            set_tray_badge
+            set_tray_badge,
+            show_about,
+            show_settings,
+            open_config,
+            get_config_path,
+            get_settings,
+            set_setting,
+            get_setting
         ])
         .setup(|app| {
             // set activation policy to Accessory (hide dock icon on macOS)
@@ -189,9 +279,55 @@ pub fn run() {
                 });
             }
 
+            // build tray menu
+            let about_item = MenuItemBuilder::with_id("about", "About Barterm").build(app)?;
+            let settings_item = MenuItemBuilder::with_id("settings", "Settings").build(app)?;
+            let open_config_item = MenuItemBuilder::with_id("open_config", "Open Config").build(app)?;
+            let quit_item = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
+            
+            let menu = MenuBuilder::new(app)
+                .item(&about_item)
+                .item(&settings_item)
+                .item(&open_config_item)
+                .separator()
+                .item(&quit_item)
+                .build()?;
+
             // build tray icon
             let tray = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
+                .menu(&menu)
+                .show_menu_on_left_click(false)
+                .on_menu_event(|app, event| match event.id().as_ref() {
+                    "about" => {
+                        if let Some(window) = app.get_webview_window("about") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                    "settings" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("show-settings", ());
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                    "open_config" => {
+                        use tauri_plugin_shell::ShellExt;
+                        
+                        // get the path to settings.json
+                        if let Ok(app_data_dir) = app.path().app_data_dir() {
+                            let config_path = app_data_dir.join("settings.json");
+                            
+                            // open with default editor
+                            let _ = app.shell().open(config_path.to_string_lossy().to_string(), None);
+                        }
+                    }
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    _ => {}
+                })
                 .on_tray_icon_event(|tray, event| {
                     // only respond to left click release
                     if let TrayIconEvent::Click {

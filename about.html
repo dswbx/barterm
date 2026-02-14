@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>About Barterm</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+          'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background: #1e1e1e;
+        color: #e0e0e0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        padding: 20px;
+      }
+
+      .about-container {
+        text-align: center;
+        max-width: 350px;
+      }
+
+      .app-icon {
+        width: 80px;
+        height: 80px;
+        margin-bottom: 20px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      h1 {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #ffffff;
+      }
+
+      .version {
+        font-size: 14px;
+        color: #888;
+        margin-bottom: 24px;
+      }
+
+      .description {
+        font-size: 14px;
+        line-height: 1.6;
+        color: #b0b0b0;
+        margin-bottom: 24px;
+      }
+
+      .support-info {
+        font-size: 12px;
+        color: #666;
+        padding-top: 20px;
+        border-top: 1px solid #333;
+      }
+
+      .support-info a {
+        color: #667eea;
+        text-decoration: none;
+      }
+
+      .support-info a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="about-container">
+      <div class="app-icon">🖥️</div>
+      <h1>Barterm</h1>
+      <div class="version">Version 0.1.0</div>
+      <div class="description">
+        A lightweight macOS menubar terminal application built with Tauri and React.
+        Quick access to your terminal right from your menubar.
+      </div>
+      <div class="support-info">
+        © 2026 Barterm<br>
+        <a href="https://github.com/yourusername/barterm" target="_blank">GitHub</a>
+      </div>
+    </div>
+  </body>
+</html>

@@ -44,6 +44,21 @@
             "center": false,
             "hiddenTitle": true,
             "titleBarStyle": "Overlay"
+         },
+         {
+            "label": "about",
+            "title": "About Barterm",
+            "url": "about.html",
+            "width": 400,
+            "height": 300,
+            "resizable": false,
+            "fullscreen": false,
+            "decorations": true,
+            "transparent": false,
+            "alwaysOnTop": false,
+            "skipTaskbar": false,
+            "visible": false,
+            "center": true
          }
       ],
       "security": {
@@ -55,6 +70,7 @@
                "permissions": [
                   "core:default",
                   "shell:default",
+                  "shell:allow-open",
                   "notification:default",
                   "notification:allow-is-permission-granted",
                   "notification:allow-request-permission",
@@ -66,6 +82,13 @@
                   "pty:allow-write",
                   "pty:allow-resize",
                   "pty:allow-kill"
+               ]
+            },
+            {
+               "identifier": "about-capability",
+               "windows": ["about"],
+               "permissions": [
+                  "core:default"
                ]
             }
          ]
