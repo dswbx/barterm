@@ -124,24 +124,26 @@ export function TerminalManager() {
       <div
          className={`h-screen w-full flex flex-col ${isDark ? "bg-gray-900" : "bg-gray-100"} fixed overflow-hidden overscroll-none`}
       >
-         <TabBar
-            tabs={tabs}
-            activeTabId={activeTabId}
-            onTabClick={handleTabClick}
-            onTabClose={handleTabClose}
-            onNewTab={handleNewTab}
-         >
-            {/* Close button */}
-            <div className="absolute top-0 right-1 z-50 h-full flex items-center justify-center py-1">
-               <button
-                  onClick={handleCloseWindow}
-                  className="px-2 h-full text-gray-400 hover:text-white hover:bg-gray-700 rounded-md transition-colors text-sm leading-none"
-                  title="Close window (Cmd+W)"
-               >
-                  ×
-               </button>
-            </div>
-         </TabBar>
+         {tabs.length > 1 && (
+            <TabBar
+               tabs={tabs}
+               activeTabId={activeTabId}
+               onTabClick={handleTabClick}
+               onTabClose={handleTabClose}
+               onNewTab={handleNewTab}
+            >
+               {/* Close button */}
+               <div className="absolute top-0 right-1 z-50 h-full flex items-center justify-center py-1">
+                  <button
+                     onClick={handleCloseWindow}
+                     className="px-2 h-full text-gray-400 hover:text-white hover:bg-gray-700 rounded-md transition-colors text-sm leading-none"
+                     title="Close window (Cmd+W)"
+                  >
+                     ×
+                  </button>
+               </div>
+            </TabBar>
+         )}
          <div className="flex-1 relative pb-1">
             {tabs.map((tab) => {
                if (!terminalRefs.current.has(tab.id)) {
