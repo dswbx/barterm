@@ -47,7 +47,14 @@ export function usePty({ tabId, cols, rows, onData }: UsePtyOptions) {
     return () => {
       mounted = false;
       if (ptyRef.current) {
-        ptyRef.current.kill().catch(console.error);
+        try {
+          const killPromise = ptyRef.current.kill();
+          if (killPromise && typeof killPromise.catch === 'function') {
+            killPromise.catch(console.error);
+          }
+        } catch (err) {
+          console.error('Failed to kill PTY:', err);
+        }
       }
     };
   }, [tabId]);

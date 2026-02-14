@@ -28,17 +28,19 @@ fn toggle_window(app: &AppHandle<Wry>, tray_icon: &tauri::tray::TrayIcon) {
                     use tauri::PhysicalSize;
                     PhysicalSize::new(600, 400)
                 });
-                
+
                 // extract position and size from rect
                 let tauri::Rect { position, size } = tray_rect;
-                
+
                 // pattern match to get physical coordinates
-                if let (tauri::Position::Physical(pos), tauri::Size::Physical(sz)) = (position, size) {
+                if let (tauri::Position::Physical(pos), tauri::Size::Physical(sz)) =
+                    (position, size)
+                {
                     // center window horizontally relative to tray icon
                     let tray_center_x = pos.x as f64 + (sz.width as f64 / 2.0);
                     let x = (tray_center_x - (window_size.width as f64 / 2.0)) as i32;
                     let y = pos.y + sz.height as i32 + 5; // 5px gap below tray
-                    
+
                     let _ = window.set_position(PhysicalPosition::new(x, y));
                 }
             }

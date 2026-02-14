@@ -1,96 +1,94 @@
-import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
-import { Terminal as XTerm, ITheme } from '@xterm/xterm';
-import { FitAddon } from '@xterm/addon-fit';
-import '@xterm/xterm/css/xterm.css';
+import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
+import { Terminal as XTerm, ITheme } from "@xterm/xterm";
+import { FitAddon } from "@xterm/addon-fit";
+import "@xterm/xterm/css/xterm.css";
 
 interface TerminalProps {
-  onData: (data: string) => void;
-  onResize: (cols: number, rows: number) => void;
-  theme: ITheme;
+   onData: (data: string) => void;
+   onResize: (cols: number, rows: number) => void;
+   theme: ITheme;
 }
 
 export interface TerminalHandle {
-  write: (data: string) => void;
-  setTheme: (theme: ITheme) => void;
-  focus: () => void;
+   write: (data: string) => void;
+   setTheme: (theme: ITheme) => void;
+   focus: () => void;
 }
 
 export const Terminal = forwardRef<TerminalHandle, TerminalProps>(
-  ({ onData, onResize, theme }, ref) => {
-  const terminalRef = useRef<HTMLDivElement>(null);
-  const xtermRef = useRef<XTerm | null>(null);
-  const fitAddonRef = useRef<FitAddon | null>(null);
+   ({ onData, onResize, theme }, ref) => {
+      const terminalRef = useRef<HTMLDivElement>(null);
+      const xtermRef = useRef<XTerm | null>(null);
+      const fitAddonRef = useRef<FitAddon | null>(null);
 
-  useEffect(() => {
-    if (!terminalRef.current) return;
+      useEffect(() => {
+         if (!terminalRef.current) return;
 
-    // create xterm instance
-    const term = new XTerm({
-      fontFamily: 'Menlo, Monaco, "Courier New", monospace',
-      fontSize: 13,
-      cursorBlink: true,
-      cursorStyle: 'block',
-      theme,
-    });
+         // create xterm instance
+         const term = new XTerm({
+            fontFamily: 'MesloLGS NF, Menlo, Monaco, "Courier New", monospace',
+            fontSize: 14,
+            cursorBlink: true,
+            cursorStyle: "block",
+            overviewRuler: {
+               width: 0,
+            },
+            theme,
+         });
 
-    const fitAddon = new FitAddon();
-    term.loadAddon(fitAddon);
+         const fitAddon = new FitAddon();
+         term.loadAddon(fitAddon);
 
-    term.open(terminalRef.current);
-    fitAddon.fit();
-    
-    // focus the terminal
-    term.focus();
+         term.open(terminalRef.current);
+         fitAddon.fit();
 
-    // send data to PTY when user types
-    term.onData((data) => {
-      onData(data);
-    });
+         // focus the terminal
+         term.focus();
 
-    // notify parent of size changes
-    const { cols, rows } = term;
-    onResize(cols, rows);
+         // send data to PTY when user types
+         term.onData((data) => {
+            onData(data);
+         });
 
-    xtermRef.current = term;
-    fitAddonRef.current = fitAddon;
+         // notify parent of size changes
+         const { cols, rows } = term;
+         onResize(cols, rows);
 
-    // handle window resize
-    const handleResize = () => {
-      if (fitAddonRef.current && xtermRef.current) {
-        fitAddonRef.current.fit();
-        const { cols, rows } = xtermRef.current;
-        onResize(cols, rows);
-      }
-    };
+         xtermRef.current = term;
+         fitAddonRef.current = fitAddon;
 
-    window.addEventListener('resize', handleResize);
+         // handle window resize
+         const handleResize = () => {
+            if (fitAddonRef.current && xtermRef.current) {
+               fitAddonRef.current.fit();
+               const { cols, rows } = xtermRef.current;
+               onResize(cols, rows);
+            }
+         };
 
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      term.dispose();
-    };
-  }, []);
+         window.addEventListener("resize", handleResize);
 
-  // expose methods to parent
-  useImperativeHandle(ref, () => ({
-    write: (data: string) => {
-      xtermRef.current?.write(data);
-    },
-    setTheme: (newTheme: ITheme) => {
-      if (xtermRef.current) {
-        xtermRef.current.options.theme = newTheme;
-      }
-    },
-    focus: () => {
-      xtermRef.current?.focus();
-    },
-  }));
+         return () => {
+            window.removeEventListener("resize", handleResize);
+            term.dispose();
+         };
+      }, []);
 
-  return (
-    <div
-      ref={terminalRef}
-      className="w-full h-full"
-      style={{ padding: '8px' }}
-    />
-  );
-});
+      // expose methods to parent
+      useImperativeHandle(ref, () => ({
+         write: (data: string) => {
+            xtermRef.current?.write(data);
+         },
+         setTheme: (newTheme: ITheme) => {
+            if (xtermRef.current) {
+               xtermRef.current.options.theme = newTheme;
+            }
+         },
+         focus: () => {
+            xtermRef.current?.focus();
+         },
+      }));
+
+      return <div ref={terminalRef} className="w-full h-full p-2 pr-1.5" />;
+   }
+);
