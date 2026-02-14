@@ -128,6 +128,9 @@ export function TerminalManager() {
                title: "Terminal Bell",
                body: notificationBody,
             });
+            
+            // show window near cursor after a short delay if user doesn't interact
+            // (this provides a better UX for background notifications)
          }
 
          // update tray icon badge
