@@ -13,20 +13,98 @@ Users can change notification behavior in **System Settings > Notifications > Ba
 
 The notification will appear on whichever display macOS considers "primary" based on system settings.
 
+## Supported Notification Mechanisms
+
+Barterm detects terminal notifications through multiple mechanisms:
+
+### 1. BEL Character (standard)
+
+The most common terminal notification. Triggered when a program outputs the BEL control character (`\x07`, `Control-G`, or `\a`).
+
+**Test:** `printf '\a'`
+
+This is the same mechanism that macOS Terminal.app uses for all of its notification features (dock badge, dock bounce, audible/visual bell). According to [Apple's documentation](https://support.apple.com/guide/terminal/trmladvn/mac), Terminal.app's notification system is entirely BEL-based.
+
+### 2. OSC 9 (iTerm2-style notification)
+
+Format: `ESC ] 9 ; <message> BEL`
+
+Originally from iTerm2's Growl integration. Sends a notification with a custom message body.
+
+**Test:** `printf '\e]9;Hello from OSC 9\a'`
+
+### 3. OSC 777 (urxvt-style notification)
+
+Format: `ESC ] 777 ; notify ; <title> ; <body> BEL`
+
+Originated in rxvt-unicode, adopted by other terminals (foot, WezTerm). Supports both a custom title and body.
+
+**Test:** `printf '\e]777;notify;My Title;My Body\a'`
+
+### 4. OSC 99 (kitty-style notification)
+
+Format: `ESC ] 99 ; <params> ; <body> ST`
+
+From the kitty terminal's notification protocol. Supports structured parameters and a body.
+
+**Test:** `printf '\e]99;;Hello from kitty\e\\'`
+
+### Notification data flow
+
+For OSC 9/777/99, the title and body from the escape sequence are used directly in the system notification. For plain BEL, a generic "Terminal Bell" / "Activity in <tab>" message is used.
+
 ## Current Implementation
 
 ### What Works
-✅ Notification appears when bell is triggered in background or inactive tab
-✅ Tray icon shows red dot badge when there are unread bells
-✅ Clicking tray icon shows window below the tray (on the screen with the menu bar)
-✅ Window appears on the correct screen when using the tray icon
-✅ Badge clears automatically when window is shown
+- Notification appears when BEL is triggered in a background or inactive tab
+- Notification appears when OSC 9/777/99 sequences are received in a background or inactive tab
+- OSC notification title/body are forwarded to the system notification
+- Tray icon shows red dot badge when there are unread notifications
+- Clicking tray icon shows window below the tray (on the screen with the menu bar)
+- Window appears on the correct screen when using the tray icon
+- Badge clears automatically when window is shown
 
 ### Limitations
-❌ Cannot control which screen the notification appears on (macOS system limitation)
-❌ Notification always appears on primary display regardless of active screen
+- Cannot control which screen the notification appears on (macOS system limitation)
+- Notification always appears on primary display regardless of active screen
+- Programs that don't emit BEL or OSC notification sequences won't trigger notifications (see note on Claude Code below)
 
-## Workaround
+## Note on Claude Code
+
+Claude Code does not emit BEL or OSC sequences by default. To get Barterm notifications when Claude Code needs your input, configure Claude Code's [hooks system](https://code.claude.com/docs/en/hooks) to emit a BEL character on notification events.
+
+Add the following to `~/.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "permission_prompt|idle_prompt|elicitation_dialog",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '\\a' > /dev/tty"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Important:** The `> /dev/tty` part is required. Hook stdout is captured by Claude Code for JSON parsing, so a bare `printf '\a'` would never reach the terminal. Writing to `/dev/tty` sends the BEL character directly to the controlling terminal (the PTY).
+
+This triggers a BEL on three key events:
+- **`permission_prompt`**: Claude needs approval to run a command or make a change
+- **`idle_prompt`**: Claude has finished working and is waiting for your next instruction (fires after ~60s of idle time)
+- **`elicitation_dialog`**: Claude is showing an interactive dialog asking you to choose between options
+
+The remaining matcher `auth_success` is omitted since it doesn't require user action.
+
+Alternatively, if you use iTerm2, you can run `/terminal-setup` inside Claude Code to enable its built-in iTerm2 notification integration.
+
+## Workaround for Notification Placement
 
 Since we can't control notification placement, the best user experience is:
 1. **Notification appears** (on primary display)
