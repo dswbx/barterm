@@ -135,7 +135,10 @@ export function TerminalManager() {
    }, []);
 
    const handleBell = useCallback(
-      async (tabId: number) => {
+      async (
+         tabId: number,
+         notification?: { title: string; body: string }
+      ) => {
          const tab = tabs.find((t) => t.id === tabId);
          if (!tab) return;
 
@@ -159,13 +162,14 @@ export function TerminalManager() {
             if (notificationsEnabled) {
                const permissionGranted = await isPermissionGranted();
                if (permissionGranted) {
-                  const notificationBody = isVisible
-                     ? `Activity in ${tab.title}`
-                     : "Terminal activity";
-                  sendNotification({
-                     title: "Terminal Bell",
-                     body: notificationBody,
-                  });
+                  // use provided notification data, or fall back to generic bell message
+                  const title = notification?.title || "Terminal Bell";
+                  const body =
+                     notification?.body ||
+                     (isVisible
+                        ? `Activity in ${tab.title}`
+                        : "Terminal activity");
+                  sendNotification({ title, body });
                }
             }
 
@@ -291,6 +295,7 @@ export function TerminalManager() {
                            theme={isDark ? darkTheme : lightTheme}
                            terminalRef={terminalRefs.current.get(tab.id)!}
                            onBell={() => handleBell(tab.id)}
+                           onNotification={(n) => handleBell(tab.id, n)}
                         />
                      );
                   })}
@@ -307,6 +312,7 @@ interface TerminalTabProps {
    theme: any;
    terminalRef: React.RefObject<TerminalHandle>;
    onBell: () => void;
+   onNotification: (notification: { title: string; body: string }) => void;
 }
 
 function TerminalTab({
@@ -315,6 +321,7 @@ function TerminalTab({
    theme,
    terminalRef,
    onBell,
+   onNotification,
 }: TerminalTabProps) {
    const { write, resize } = usePty({
       tabId,
@@ -343,6 +350,7 @@ function TerminalTab({
             onData={handleData}
             onResize={handleResize}
             onBell={onBell}
+            onNotification={onNotification}
             theme={theme}
          />
       </div>

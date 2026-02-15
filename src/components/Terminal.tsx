@@ -3,10 +3,16 @@ import { Terminal as XTerm, ITheme } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 
+interface TerminalNotification {
+   title: string;
+   body: string;
+}
+
 interface TerminalProps {
    onData: (data: string) => void;
    onResize: (cols: number, rows: number) => void;
    onBell?: () => void;
+   onNotification?: (notification: TerminalNotification) => void;
    theme: ITheme;
 }
 
@@ -17,7 +23,7 @@ export interface TerminalHandle {
 }
 
 export const Terminal = forwardRef<TerminalHandle, TerminalProps>(
-   ({ onData, onResize, onBell, theme }, ref) => {
+   ({ onData, onResize, onBell, onNotification, theme }, ref) => {
       const terminalRef = useRef<HTMLDivElement>(null);
       const xtermRef = useRef<XTerm | null>(null);
       const fitAddonRef = useRef<FitAddon | null>(null);
@@ -63,6 +69,46 @@ export const Terminal = forwardRef<TerminalHandle, TerminalProps>(
                onBell();
             });
          }
+
+         // register OSC notification handlers (9, 777, 99)
+         const notify = (title: string, body: string) => {
+            if (onNotification) {
+               onNotification({ title, body });
+            } else if (onBell) {
+               // fall back to bell if no notification handler
+               onBell();
+            }
+         };
+
+         // OSC 9: iTerm2-style notification
+         // format: ESC ] 9 ; <message> BEL
+         term.parser.registerOscHandler(9, (data) => {
+            notify("Terminal", data || "Notification");
+            return true;
+         });
+
+         // OSC 777: urxvt-style notification
+         // format: ESC ] 777 ; notify ; <title> ; <body> BEL
+         term.parser.registerOscHandler(777, (data) => {
+            const parts = data.split(";");
+            if (parts[0] === "notify") {
+               const title = parts[1]?.trim() || "Terminal";
+               const body = parts[2]?.trim() || "Notification";
+               notify(title, body);
+            }
+            return true;
+         });
+
+         // OSC 99: kitty-style notification
+         // format: ESC ] 99 ; <params> ; <body> ST
+         term.parser.registerOscHandler(99, (data) => {
+            // params and body are separated by the first ';'
+            const sepIndex = data.indexOf(";");
+            const body =
+               sepIndex >= 0 ? data.substring(sepIndex + 1) : data;
+            notify("Terminal", body || "Notification");
+            return true;
+         });
 
          xtermRef.current = term;
          fitAddonRef.current = fitAddon;
