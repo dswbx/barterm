@@ -199,14 +199,16 @@ export function TerminalManager() {
       return unwatch;
    }, []);
 
-   // clear tray badge when window becomes visible
+   // when window becomes visible, only clear tray badge if no tabs have unread bells
    useEffect(() => {
-      const handleVisibilityChange = async () => {
-         const isVisible = await invoke<boolean>("is_window_visible");
-         if (isVisible) {
-            // clear tray badge when window is shown
-            await invoke("set_tray_badge", { hasUnread: false });
-         }
+      const handleVisibilityChange = () => {
+         setTabs((currentTabs) => {
+            const hasAnyBells = currentTabs.some((t) => t.hasBell);
+            if (!hasAnyBells) {
+               invoke("set_tray_badge", { hasUnread: false });
+            }
+            return currentTabs;
+         });
       };
 
       // check on mount and when window focus changes
@@ -242,14 +244,14 @@ export function TerminalManager() {
             e.preventDefault();
             const index = parseInt(e.key) - 1;
             if (index < tabs.length) {
-               setActiveTabId(tabs[index].id);
+               handleTabClick(tabs[index].id);
             }
          }
       };
 
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
-   }, [tabs, activeTabId, handleNewTab, handleTabClose, handleCloseWindow]);
+   }, [tabs, activeTabId, handleNewTab, handleTabClick, handleTabClose, handleCloseWindow]);
 
    return (
       <div

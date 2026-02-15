@@ -28,6 +28,25 @@ export const Terminal = forwardRef<TerminalHandle, TerminalProps>(
       const xtermRef = useRef<XTerm | null>(null);
       const fitAddonRef = useRef<FitAddon | null>(null);
 
+      // keep refs to callbacks so xterm handlers always call the latest version
+      const onBellRef = useRef(onBell);
+      const onNotificationRef = useRef(onNotification);
+      const onDataRef = useRef(onData);
+      const onResizeRef = useRef(onResize);
+
+      useEffect(() => {
+         onBellRef.current = onBell;
+      }, [onBell]);
+      useEffect(() => {
+         onNotificationRef.current = onNotification;
+      }, [onNotification]);
+      useEffect(() => {
+         onDataRef.current = onData;
+      }, [onData]);
+      useEffect(() => {
+         onResizeRef.current = onResize;
+      }, [onResize]);
+
       useEffect(() => {
          if (!terminalRef.current) return;
 
@@ -52,7 +71,7 @@ export const Terminal = forwardRef<TerminalHandle, TerminalProps>(
          setTimeout(() => {
             fitAddon.fit();
             const { cols, rows } = term;
-            onResize(cols, rows);
+            onResizeRef.current(cols, rows);
          }, 0);
 
          // focus the terminal
@@ -60,23 +79,21 @@ export const Terminal = forwardRef<TerminalHandle, TerminalProps>(
 
          // send data to PTY when user types
          term.onData((data) => {
-            onData(data);
+            onDataRef.current(data);
          });
 
          // listen for bell events
-         if (onBell) {
-            term.onBell(() => {
-               onBell();
-            });
-         }
+         term.onBell(() => {
+            onBellRef.current?.();
+         });
 
          // register OSC notification handlers (9, 777, 99)
          const notify = (title: string, body: string) => {
-            if (onNotification) {
-               onNotification({ title, body });
-            } else if (onBell) {
+            if (onNotificationRef.current) {
+               onNotificationRef.current({ title, body });
+            } else if (onBellRef.current) {
                // fall back to bell if no notification handler
-               onBell();
+               onBellRef.current();
             }
          };
 
@@ -118,7 +135,7 @@ export const Terminal = forwardRef<TerminalHandle, TerminalProps>(
             if (fitAddonRef.current && xtermRef.current) {
                fitAddonRef.current.fit();
                const { cols, rows } = xtermRef.current;
-               onResize(cols, rows);
+               onResizeRef.current(cols, rows);
             }
          };
 

@@ -225,12 +225,7 @@ fn toggle_window(app: &AppHandle<Wry>, tray_icon: &tauri::tray::TrayIcon) {
             let _ = window.show();
             let _ = window.set_focus();
 
-            // clear tray badge when showing window
-            if let Some(tray) = app.try_state::<tauri::tray::TrayIcon>() {
-                if let Some(default_icon) = app.default_window_icon() {
-                    let _ = tray.set_icon(Some(default_icon.clone()));
-                }
-            }
+            // note: tray badge is managed by the frontend based on per-tab bell state
         }
     }
 }
