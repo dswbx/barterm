@@ -89,10 +89,25 @@ export function TerminalManager() {
       (tabId: number) => {
          setTabs((prev) => {
             const newTabs = prev.filter((t) => t.id !== tabId);
+
+            // clean up the ref for the closed tab
+            terminalRefs.current.delete(tabId);
+
             if (newTabs.length === 0) {
-               // always keep at least one tab
-               return prev;
+               // closing the last tab - replace with a fresh one
+               const freshId = nextTabId;
+               setActiveTabId(freshId);
+               setNextTabId((p) => p + 1);
+               return [
+                  {
+                     id: freshId,
+                     title: `Terminal ${freshId}`,
+                     ptyId: null,
+                     hasBell: false,
+                  },
+               ];
             }
+
             // if closing active tab, switch to another
             if (tabId === activeTabId) {
                const index = prev.findIndex((t) => t.id === tabId);
@@ -100,13 +115,10 @@ export function TerminalManager() {
                setActiveTabId(newActiveTab.id);
             }
 
-            // clean up the ref for the closed tab
-            terminalRefs.current.delete(tabId);
-
             return newTabs;
          });
       },
-      [activeTabId]
+      [activeTabId, nextTabId]
    );
 
    const handleTabClick = useCallback((tabId: number) => {
@@ -184,6 +196,23 @@ export function TerminalManager() {
       invoke("close_window");
    }, []);
 
+   // close all tabs, open a fresh one, and hide the window
+   const handleCloseAllAndHide = useCallback(() => {
+      terminalRefs.current.clear();
+      const freshId = nextTabId;
+      setTabs([
+         {
+            id: freshId,
+            title: `Terminal ${freshId}`,
+            ptyId: null,
+            hasBell: false,
+         },
+      ]);
+      setActiveTabId(freshId);
+      setNextTabId((p) => p + 1);
+      handleCloseWindow();
+   }, [nextTabId, handleCloseWindow]);
+
    // watch for system theme changes
    useEffect(() => {
       const unwatch = watchSystemTheme((theme) => {
@@ -230,11 +259,25 @@ export function TerminalManager() {
             e.preventDefault();
             handleNewTab();
          }
-         // Cmd+W - close tab or window
+         // Cmd+Shift+W - close all tabs and hide
+         else if (
+            e.metaKey &&
+            e.shiftKey &&
+            e.key.toLowerCase() === "w"
+         ) {
+            e.preventDefault();
+            handleCloseAllAndHide();
+         }
+         // Cmd+W - close current tab
          else if (e.metaKey && e.key === "w") {
             e.preventDefault();
-            if (tabs.length > 1) {
-               handleTabClose(activeTabId);
+            handleTabClose(activeTabId);
+         }
+         // Cmd+M - hide barterm (or close settings)
+         else if (e.metaKey && e.key === "m") {
+            e.preventDefault();
+            if (showSettings) {
+               setShowSettings(false);
             } else {
                handleCloseWindow();
             }
@@ -251,7 +294,16 @@ export function TerminalManager() {
 
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
-   }, [tabs, activeTabId, handleNewTab, handleTabClick, handleTabClose, handleCloseWindow]);
+   }, [
+      tabs,
+      activeTabId,
+      showSettings,
+      handleNewTab,
+      handleTabClick,
+      handleTabClose,
+      handleCloseWindow,
+      handleCloseAllAndHide,
+   ]);
 
    return (
       <div
@@ -274,7 +326,7 @@ export function TerminalManager() {
                         <button
                            onClick={handleCloseWindow}
                            className="px-2 h-full text-gray-400 hover:text-white hover:bg-gray-700 rounded-md transition-colors text-sm leading-none"
-                           title="Close window (Cmd+W)"
+                           title="Hide (Cmd+M)"
                         >
                            ×
                         </button>
