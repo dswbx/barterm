@@ -5,7 +5,8 @@
 | Shortcut | Action | Description |
 |----------|--------|-------------|
 | `Cmd+T` | New Tab | Creates a new terminal tab |
-| `Cmd+W` | Close Tab/Window | Closes current tab, or closes window if only one tab |
+| `Cmd+W` | Close Tab | Closes current tab (opens a fresh tab if it was the last one) |
+| `Cmd+Shift+W` | Close All & Hide | Closes all tabs and hides barterm |
 | `Cmd+1` | Switch to Tab 1 | Switches to the first tab |
 | `Cmd+2` | Switch to Tab 2 | Switches to the second tab |
 | `Cmd+3` | Switch to Tab 3 | Switches to the third tab |
@@ -18,8 +19,9 @@
 
 ## Window Management
 
-| Action | Method | Description |
-|--------|--------|-------------|
+| Shortcut / Action | Method | Description |
+|-------------------|--------|-------------|
+| `Cmd+M` | Keyboard | Hides barterm (also closes settings view if open) |
 | Show/Hide Window | Left-click tray icon | Toggles window visibility |
 | Context Menu | Right-click tray icon | Opens tray menu |
 
@@ -61,6 +63,7 @@ Right-click the tray icon to access:
 ## Tips
 
 - **Tab Navigation**: Cmd+1 through Cmd+9 allows quick switching between up to 9 tabs
-- **Quick Close**: Use Cmd+W to quickly close tabs; closes window when only one tab remains
+- **Quick Close**: Use Cmd+W to close the current tab, or Cmd+Shift+W to close all tabs and hide
+- **Quick Hide**: Use Cmd+M to quickly hide barterm without closing any tabs
 - **Window Toggle**: Left-click the tray icon for quick access to your terminal
 - **Bell Notifications**: Terminal bell (`echo -e '\a'`) triggers notifications when window is hidden

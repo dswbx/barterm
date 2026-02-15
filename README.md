@@ -11,7 +11,7 @@ A modern macOS menubar terminal application built with Tauri v2, React, and Type
 - **Smart Notifications**: Get notified when commands complete in background tabs
 - **Persistent Settings**: Window size and preferences automatically saved
 - **System Theme**: Automatically follows macOS light/dark mode
-- **Keyboard Shortcuts**: Fast navigation with keyboard shortcuts (Cmd+T, Cmd+W, Cmd+1-9)
+- **Keyboard Shortcuts**: Fast navigation with keyboard shortcuts (Cmd+T, Cmd+W, Cmd+M, Cmd+1-9)
 - **Tray Menu**: Right-click for quick access to settings, config, and more
 - **Modern UI**: Clean, minimal interface with smooth animations
 
@@ -59,7 +59,9 @@ npm run tauri:build
 
 ### Keyboard Shortcuts
 - `Cmd+T` - New tab
-- `Cmd+W` - Close tab (or window if last tab)
+- `Cmd+W` - Close current tab
+- `Cmd+M` - Hide barterm
+- `Cmd+Shift+W` - Close all tabs and hide barterm
 - `Cmd+1-9` - Switch to tab 1-9
 
 See [KEYBOARD_SHORTCUTS.md](docs/KEYBOARD_SHORTCUTS.md) for complete list.
