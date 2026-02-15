@@ -14,12 +14,13 @@ use std::time::{Duration, Instant};
 // set the alpha value of the NSWindow on macOS
 #[cfg(target_os = "macos")]
 fn apply_window_opacity(window: &tauri::WebviewWindow, opacity: f64) {
-    use objc::{msg_send, sel, sel_impl};
+    use cocoa::appkit::NSWindow;
+    use cocoa::base::id;
 
     let opacity = opacity.clamp(0.1, 1.0);
     let _ = window.with_webview(move |webview| unsafe {
-        let ns_win = webview.ns_window() as *mut objc::runtime::Object;
-        let _: () = msg_send![ns_win, setAlphaValue: opacity];
+        let ns_win: id = webview.ns_window() as id;
+        ns_win.setAlphaValue_(opacity);
     });
 }
 
