@@ -21,6 +21,7 @@
 
 | Shortcut / Action | Method | Description |
 |-------------------|--------|-------------|
+| `Cmd+,` | Keyboard | Opens settings (or returns to terminal if settings are open) |
 | `Cmd+M` | Keyboard | Hides barterm (also closes settings view if open) |
 | Show/Hide Window | Left-click tray icon | Toggles window visibility |
 | Context Menu | Right-click tray icon | Opens tray menu |
@@ -48,7 +49,7 @@ When in Settings view:
 
 | Action | Method |
 |--------|--------|
-| Back to Terminal | Click "← Terminal" button |
+| Back to Terminal | `Cmd+,` or click "← Terminal" button |
 | Close Window | Click × button in header |
 
 ## Tray Menu

@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback, useEffect, createRef } from "react";
-import { Terminal, TerminalHandle } from "./Terminal";
+import { TerminalHandle } from "./Terminal";
 import { TabBar } from "./TabBar";
-import { usePty } from "../hooks/usePty";
+import { TerminalTab } from "./TerminalTab";
+import { Settings } from "./Settings";
 import {
    lightTheme,
    darkTheme,
@@ -15,7 +16,6 @@ import {
    sendNotification,
 } from "@tauri-apps/plugin-notification";
 import { listen } from "@tauri-apps/api/event";
-import { Switch } from "@base-ui/react/switch";
 import { useSettings } from "../contexts/SettingsContext";
 
 interface Tab {
@@ -45,6 +45,15 @@ export function TerminalManager() {
       if (!settingsLoaded) return;
       invoke("set_window_opacity", { opacity: settings.window_opacity });
    }, [settingsLoaded]);
+
+   // apply terminal theme changes to all open terminals
+   const terminalTheme = settings.terminal_theme;
+   useEffect(() => {
+      if (!settingsLoaded) return;
+      terminalRefs.current.forEach((ref) => {
+         ref.current?.updateTerminalTheme(terminalTheme);
+      });
+   }, [terminalTheme, settingsLoaded]);
 
    // request notification permission after settings are loaded
    useEffect(() => {
@@ -282,6 +291,11 @@ export function TerminalManager() {
                handleCloseWindow();
             }
          }
+         // Cmd+, - toggle settings
+         else if (e.metaKey && e.key === ",") {
+            e.preventDefault();
+            setShowSettings((prev) => !prev);
+         }
          // Cmd+1-9 - switch to tab
          else if (e.metaKey && e.key >= "1" && e.key <= "9") {
             e.preventDefault();
@@ -347,6 +361,7 @@ export function TerminalManager() {
                            tabId={tab.id}
                            isActive={tab.id === activeTabId}
                            theme={isDark ? darkTheme : lightTheme}
+                           terminalTheme={terminalTheme}
                            terminalRef={terminalRefs.current.get(tab.id)!}
                            onBell={() => handleBell(tab.id)}
                            onNotification={(n) => handleBell(tab.id, n)}
@@ -356,269 +371,6 @@ export function TerminalManager() {
                </div>
             </>
          )}
-      </div>
-   );
-}
-
-interface TerminalTabProps {
-   tabId: number;
-   isActive: boolean;
-   theme: any;
-   terminalRef: React.RefObject<TerminalHandle>;
-   onBell: () => void;
-   onNotification: (notification: { title: string; body: string }) => void;
-}
-
-function TerminalTab({
-   tabId,
-   isActive,
-   theme,
-   terminalRef,
-   onBell,
-   onNotification,
-}: TerminalTabProps) {
-   const { write, resize } = usePty({
-      tabId,
-      cols: 80,
-      rows: 24,
-      onData: (data) => {
-         terminalRef.current?.write(data);
-      },
-   });
-
-   const handleData = (data: string) => {
-      write(data);
-   };
-
-   const handleResize = (cols: number, rows: number) => {
-      resize(cols, rows);
-   };
-
-   return (
-      <div
-         className={`absolute inset-0 ${isActive ? "block" : "hidden"} pb-1`}
-         style={{ backgroundColor: theme.background }}
-      >
-         <Terminal
-            ref={terminalRef}
-            onData={handleData}
-            onResize={handleResize}
-            onBell={onBell}
-            onNotification={onNotification}
-            theme={theme}
-         />
-      </div>
-   );
-}
-
-interface SettingsProps {
-   isDark: boolean;
-   onClose: () => void;
-}
-
-function Settings({ isDark, onClose }: SettingsProps) {
-   const { settings, updateSetting } = useSettings();
-   const notificationsEnabled = settings.notifications_enabled;
-   const handleCloseWindow = () => {
-      invoke("close_window");
-   };
-
-   return (
-      <div
-         className={`h-full w-full flex ${isDark ? "bg-[#1e1e1e]" : "bg-[#ececec]"}`}
-      >
-         {/* Sidebar */}
-         <div
-            className={`w-48 flex-shrink-0 ${isDark ? "bg-[#2d2d2d]" : "bg-[#e3e3e3]"} border-r ${isDark ? "border-[#3d3d3d]" : "border-[#d0d0d0]"}`}
-         >
-            <div className="p-4">
-               <button
-                  onClick={onClose}
-                  className={`flex items-center gap-2 text-sm ${isDark ? "text-gray-300 hover:text-white" : "text-gray-700 hover:text-black"} transition-colors mb-6`}
-               >
-                  <span>←</span>
-                  <span>Terminal</span>
-               </button>
-               <nav className="space-y-1">
-                  <div
-                     className={`px-3 py-2 rounded-md text-sm font-medium ${isDark ? "bg-[#3d3d3d] text-white" : "bg-white text-black"}`}
-                  >
-                     General
-                  </div>
-               </nav>
-            </div>
-         </div>
-
-         {/* Main Content */}
-         <div className="flex-1 flex flex-col">
-            {/* Header */}
-            <div
-               className={`px-6 py-4 border-b ${isDark ? "border-[#3d3d3d]" : "border-[#d0d0d0]"} flex items-center justify-between`}
-            >
-               <h1
-                  className={`text-xl font-semibold ${isDark ? "text-white" : "text-black"}`}
-               >
-                  General
-               </h1>
-               <button
-                  onClick={handleCloseWindow}
-                  className={`w-6 h-6 rounded-full flex items-center justify-center ${isDark ? "hover:bg-[#3d3d3d] text-gray-400 hover:text-white" : "hover:bg-[#d0d0d0] text-gray-600 hover:text-black"} transition-colors text-lg leading-none`}
-                  title="Close window"
-               >
-                  ×
-               </button>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto px-6 py-6">
-               <div className="max-w-3xl space-y-6">
-                  {/* Theme Setting */}
-                  <div
-                     className={`flex items-start justify-between py-3 border-b ${isDark ? "border-[#3d3d3d]" : "border-[#d0d0d0]"}`}
-                  >
-                     <div className="flex-1">
-                        <div
-                           className={`text-sm font-medium ${isDark ? "text-white" : "text-black"}`}
-                        >
-                           Appearance
-                        </div>
-                        <div
-                           className={`text-xs mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                        >
-                           Follows system theme
-                        </div>
-                     </div>
-                     <div
-                        className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                     >
-                        Auto
-                     </div>
-                  </div>
-
-                  {/* Window Opacity Setting */}
-                  <div
-                     className={`flex items-start justify-between py-3 border-b ${isDark ? "border-[#3d3d3d]" : "border-[#d0d0d0]"}`}
-                  >
-                     <div className="flex-1">
-                        <div
-                           className={`text-sm font-medium ${isDark ? "text-white" : "text-black"}`}
-                        >
-                           Window Opacity
-                        </div>
-                        <div
-                           className={`text-xs mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                        >
-                           Adjust the transparency of the window
-                        </div>
-                     </div>
-                     <div className="flex items-center gap-3">
-                        <input
-                           type="range"
-                           min="0.1"
-                           max="1"
-                           step="0.01"
-                           value={settings.window_opacity}
-                           onChange={(e) => {
-                              const value = parseFloat(e.target.value);
-                              invoke("set_window_opacity", { opacity: value });
-                              updateSetting("window_opacity", value);
-                           }}
-                           className="w-24 accent-[#007AFF]"
-                        />
-                        <span
-                           className={`text-sm tabular-nums w-10 text-right ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                        >
-                           {Math.round(settings.window_opacity * 100)}%
-                        </span>
-                     </div>
-                  </div>
-
-                  {/* Notifications Setting */}
-                  <div
-                     className={`flex items-start justify-between py-3 border-b ${isDark ? "border-[#3d3d3d]" : "border-[#d0d0d0]"}`}
-                  >
-                     <div className="flex-1">
-                        <div
-                           className={`text-sm font-medium ${isDark ? "text-white" : "text-black"}`}
-                        >
-                           Notifications
-                        </div>
-                        <div
-                           className={`text-xs mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                        >
-                           Show terminal bell notifications
-                        </div>
-                     </div>
-                     <Switch.Root
-                        checked={notificationsEnabled}
-                        onCheckedChange={(checked) =>
-                           updateSetting("notifications_enabled", checked)
-                        }
-                        className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
-                        style={{
-                           backgroundColor: notificationsEnabled
-                              ? "#007AFF"
-                              : isDark
-                                ? "#3d3d3d"
-                                : "#d0d0d0",
-                        }}
-                     >
-                        <Switch.Thumb
-                           className="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform"
-                           style={{
-                              transform: notificationsEnabled
-                                 ? "translateX(22px)"
-                                 : "translateX(2px)",
-                           }}
-                        />
-                     </Switch.Root>
-                  </div>
-
-                  {/* Window Size Setting */}
-                  <div
-                     className={`flex items-start justify-between py-3 border-b ${isDark ? "border-[#3d3d3d]" : "border-[#d0d0d0]"}`}
-                  >
-                     <div className="flex-1">
-                        <div
-                           className={`text-sm font-medium ${isDark ? "text-white" : "text-black"}`}
-                        >
-                           Window Size
-                        </div>
-                        <div
-                           className={`text-xs mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                        >
-                           Automatically saved when resized
-                        </div>
-                     </div>
-                  </div>
-
-                  {/* About Section */}
-                  <div className="pt-6">
-                     <div
-                        className={`text-xs font-medium uppercase tracking-wider mb-3 ${isDark ? "text-gray-500" : "text-gray-500"}`}
-                     >
-                        About
-                     </div>
-                     <div
-                        className={`flex items-start justify-between py-3 border-b ${isDark ? "border-[#3d3d3d]" : "border-[#d0d0d0]"}`}
-                     >
-                        <div className="flex-1">
-                           <div
-                              className={`text-sm font-medium ${isDark ? "text-white" : "text-black"}`}
-                           >
-                              Barterm
-                           </div>
-                           <div
-                              className={`text-xs mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                           >
-                              Version 0.1.0
-                           </div>
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            </div>
-         </div>
       </div>
    );
 }

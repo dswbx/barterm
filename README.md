@@ -38,9 +38,21 @@ npm run tauri:build
 - **[Implementation Details](docs/IMPLEMENTATION.md)** - Technical implementation notes
 - **[Notification Behavior](docs/NOTIFICATION_BEHAVIOR.md)** - How notifications work
 
+## Installation
+
+Download the latest `.dmg` from [Releases](../../releases), open it and drag Barterm to your Applications folder.
+
+Since the app is not signed with an Apple Developer certificate, macOS will block it on first launch. To fix this, run:
+
+```bash
+xattr -cr /Applications/Barterm.app
+```
+
+Then open the app normally. You only need to do this once.
+
 ## Requirements
 
-- macOS 10.15 or later
+- macOS 10.15 or later (Apple Silicon)
 - [Rust](https://www.rust-lang.org/tools/install) (for development)
 - [Node.js](https://nodejs.org/) v18+ (for development)
 

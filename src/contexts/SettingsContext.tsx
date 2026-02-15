@@ -7,19 +7,35 @@ import {
 } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
+// terminal theming options
+export interface TerminalThemeSettings {
+   font_family: string;
+   font_size: number;
+   cursor_blink: boolean;
+   cursor_style: "block" | "underline" | "bar";
+}
+
+export const defaultTerminalTheme: TerminalThemeSettings = {
+   font_family: 'Menlo, Monaco, "Courier New", monospace',
+   font_size: 14,
+   cursor_blink: true,
+   cursor_style: "block",
+};
+
 // define the settings structure
 export interface AppSettings {
    notifications_enabled: boolean;
    window_opacity: number;
    window_width?: number;
    window_height?: number;
-   // add more settings here as needed
+   terminal_theme: TerminalThemeSettings;
 }
 
 // default settings
 const defaultSettings: AppSettings = {
    notifications_enabled: true,
    window_opacity: 1.0,
+   terminal_theme: { ...defaultTerminalTheme },
 };
 
 interface SettingsContextType {
@@ -52,10 +68,14 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
                await invoke<Record<string, unknown>>("get_settings");
             console.log("Loaded settings:", allSettings);
 
-            // merge with defaults
+            // merge with defaults (deep merge for nested objects)
             const mergedSettings: AppSettings = {
                ...defaultSettings,
                ...allSettings,
+               terminal_theme: {
+                  ...defaultTerminalTheme,
+                  ...((allSettings.terminal_theme as Partial<TerminalThemeSettings>) || {}),
+               },
             };
 
             setSettings(mergedSettings);

@@ -2,6 +2,7 @@ import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import { Terminal as XTerm, ITheme } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
+import type { TerminalThemeSettings } from "../contexts/SettingsContext";
 
 interface TerminalNotification {
    title: string;
@@ -14,16 +15,18 @@ interface TerminalProps {
    onBell?: () => void;
    onNotification?: (notification: TerminalNotification) => void;
    theme: ITheme;
+   terminalTheme: TerminalThemeSettings;
 }
 
 export interface TerminalHandle {
    write: (data: string) => void;
    setTheme: (theme: ITheme) => void;
+   updateTerminalTheme: (terminalTheme: TerminalThemeSettings) => void;
    focus: () => void;
 }
 
 export const Terminal = forwardRef<TerminalHandle, TerminalProps>(
-   ({ onData, onResize, onBell, onNotification, theme }, ref) => {
+   ({ onData, onResize, onBell, onNotification, theme, terminalTheme }, ref) => {
       const terminalRef = useRef<HTMLDivElement>(null);
       const xtermRef = useRef<XTerm | null>(null);
       const fitAddonRef = useRef<FitAddon | null>(null);
@@ -52,10 +55,10 @@ export const Terminal = forwardRef<TerminalHandle, TerminalProps>(
 
          // create xterm instance
          const term = new XTerm({
-            fontFamily: 'MesloLGS NF, Menlo, Monaco, "Courier New", monospace',
-            fontSize: 14,
-            cursorBlink: true,
-            cursorStyle: "block",
+            fontFamily: terminalTheme.font_family,
+            fontSize: terminalTheme.font_size,
+            cursorBlink: terminalTheme.cursor_blink,
+            cursorStyle: terminalTheme.cursor_style,
             overviewRuler: {
                width: 0,
             },
@@ -155,6 +158,16 @@ export const Terminal = forwardRef<TerminalHandle, TerminalProps>(
          setTheme: (newTheme: ITheme) => {
             if (xtermRef.current) {
                xtermRef.current.options.theme = newTheme;
+            }
+         },
+         updateTerminalTheme: (t: TerminalThemeSettings) => {
+            if (xtermRef.current) {
+               xtermRef.current.options.fontFamily = t.font_family;
+               xtermRef.current.options.fontSize = t.font_size;
+               xtermRef.current.options.cursorBlink = t.cursor_blink;
+               xtermRef.current.options.cursorStyle = t.cursor_style;
+               // re-fit after font changes affect character metrics
+               fitAddonRef.current?.fit();
             }
          },
          focus: () => {
