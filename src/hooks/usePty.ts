@@ -20,9 +20,18 @@ export function usePty({ tabId, cols, rows, onData }: UsePtyOptions) {
          try {
             const shell = import.meta.env.VITE_SHELL || "/bin/zsh";
 
-            const pty = await spawn(shell, [], {
+            // when launched as a .app bundle, macOS gives us a minimal
+            // environment via launchd (no TERM, stripped PATH, etc.).
+            // we set the essentials here and use -l (login shell) so that
+            // .zprofile / .zlogin are sourced and PATH is fully populated.
+            const pty = await spawn(shell, ["-l"], {
                cols,
                rows,
+               env: {
+                  TERM: "xterm-256color",
+                  COLORTERM: "truecolor",
+                  LANG: "en_US.UTF-8",
+               },
             });
 
             if (!mounted) {
