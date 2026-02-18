@@ -43,7 +43,7 @@ export function TabBar({
                )}
                {tabs.length > 1 && (
                   <button
-                     className="text-zinc-500 hover:text-white transition-colors text-base leading-none"
+                     className="-mt-0.5 text-zinc-500 hover:text-white transition-colors text-base leading-none"
                      onClick={(e) => {
                         e.stopPropagation();
                         onTabClose(tab.id);

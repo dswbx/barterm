@@ -360,7 +360,7 @@ export function TerminalManager() {
                      onNewTab={handleNewTab}
                   >
                      {/* Close button */}
-                     <div className="absolute top-0 right-1 z-50 h-full flex items-center justify-center py-1">
+                     <div className="absolute top-0 right-1 z-50 h-full flex items-center justify-center">
                         <button
                            onClick={handleCloseWindow}
                            className="px-2 h-full text-gray-400 hover:text-white hover:bg-gray-700 rounded-md transition-colors text-sm leading-none"

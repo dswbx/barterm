@@ -20,7 +20,6 @@ export function Settings({ isDark, onClose }: SettingsProps) {
       { id: "general", label: "General" },
       { id: "terminal", label: "Terminal" },
       { id: "shortcuts", label: "Shortcuts" },
-      { id: "about", label: "About" },
    ];
 
    return (
@@ -121,7 +120,6 @@ export function Settings({ isDark, onClose }: SettingsProps) {
                         updateSetting={updateSetting}
                      />
                   )}
-                  {activePage === "about" && <AboutPage isDark={isDark} />}
                </div>
             </div>
          </div>
