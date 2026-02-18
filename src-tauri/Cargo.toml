@@ -1,6 +1,6 @@
 [package]
 name = "barterm"
-version = "0.2.4"
+version = "0.2.5"
 description = "macOS menubar terminal app"
 authors = ["you"]
 edition = "2021"
