@@ -24,19 +24,12 @@ export function Settings({ isDark, onClose }: SettingsProps) {
    ];
 
    return (
-      <div
-         className={cn(
-            "h-full w-full flex",
-            isDark ? "bg-[#1e1e1e]" : "bg-[#ececec]"
-         )}
-      >
+      <div className={cn("h-full w-full flex", isDark ? "bg-[#1e1e1e]" : "bg-[#ececec]")}>
          {/* Sidebar */}
          <div
             className={cn(
                "w-52 flex-shrink-0 flex flex-col border-r gap-2",
-               isDark
-                  ? "bg-[#2a2a2a] border-[#3a3a3a]"
-                  : "bg-[#e3e3e3] border-[#d0d0d0]"
+               isDark ? "bg-[#2a2a2a] border-[#3a3a3a]" : "bg-[#e3e3e3] border-[#d0d0d0]"
             )}
          >
             <div className="px-4 pt-4 pb-2">
@@ -44,9 +37,7 @@ export function Settings({ isDark, onClose }: SettingsProps) {
                   onClick={onClose}
                   className={cn(
                      "flex items-center gap-1.5 text-xs transition-colors",
-                     isDark
-                        ? "text-gray-300 hover:text-white"
-                        : "text-gray-500 hover:text-gray-700"
+                     isDark ? "text-gray-300 hover:text-white" : "text-gray-500 hover:text-gray-700"
                   )}
                >
                   <span>←</span>
@@ -72,12 +63,7 @@ export function Settings({ isDark, onClose }: SettingsProps) {
                ))}
             </nav>
             <div className="px-4 py-4 flex flex-col items-center gap-1">
-               <div
-                  className={cn(
-                     "text-[11px]",
-                     isDark ? "text-gray-600" : "text-gray-400"
-                  )}
-               >
+               <div className={cn("text-[11px]", isDark ? "text-gray-600" : "text-gray-400")}>
                   Barterm {import.meta.env.VITE_VERSION}
                </div>
             </div>
@@ -92,12 +78,7 @@ export function Settings({ isDark, onClose }: SettingsProps) {
                   isDark ? "border-[#3a3a3a]" : "border-[#d0d0d0]"
                )}
             >
-               <h1
-                  className={cn(
-                     "text-base font-semibold",
-                     isDark ? "text-white" : "text-black"
-                  )}
-               >
+               <h1 className={cn("text-base font-semibold", isDark ? "text-white" : "text-black")}>
                   {pages.find((p) => p.id === activePage)?.label}
                </h1>
                <button
@@ -149,9 +130,7 @@ export function Settings({ isDark, onClose }: SettingsProps) {
 }
 
 // shared types for page props
-type UpdateSetting = <
-   K extends keyof import("../contexts/SettingsContext").AppSettings,
->(
+type UpdateSetting = <K extends keyof import("../contexts/SettingsContext").AppSettings>(
    key: K,
    value: import("../contexts/SettingsContext").AppSettings[K]
 ) => Promise<void>;
@@ -196,12 +175,7 @@ function SettingLabel({
 }) {
    return (
       <div className="flex flex-col flex-1 min-w-0 mr-4 gap-0.5">
-         <div
-            className={cn(
-               "font-medium text-sm",
-               isDark ? "text-white" : "text-black"
-            )}
-         >
+         <div className={cn("font-medium text-sm", isDark ? "text-white" : "text-black")}>
             {title}
          </div>
          <div className="text-xs opacity-50 text-white">{description}</div>
@@ -209,20 +183,9 @@ function SettingLabel({
    );
 }
 
-function SettingGroup({
-   children,
-   isDark,
-}: {
-   children: React.ReactNode;
-   isDark: boolean;
-}) {
+function SettingGroup({ children, isDark }: { children: React.ReactNode; isDark: boolean }) {
    return (
-      <div
-         className={cn(
-            "rounded-lg overflow-hidden px-4",
-            isDark ? "bg-[#2a2a2a]" : "bg-white"
-         )}
-      >
+      <div className={cn("rounded-lg overflow-hidden px-4", isDark ? "bg-[#2a2a2a]" : "bg-white")}>
          {children}
       </div>
    );
@@ -256,11 +219,7 @@ function ToggleSwitch({
             "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
          )}
          style={{
-            backgroundColor: checked
-               ? "#007AFF"
-               : isDark
-                 ? "#3d3d3d"
-                 : "#d0d0d0",
+            backgroundColor: checked ? "#007AFF" : isDark ? "#3d3d3d" : "#d0d0d0",
          }}
       >
          <Switch.Thumb
@@ -336,9 +295,7 @@ function GeneralPage({
                <ToggleSwitch
                   isDark={isDark}
                   checked={notificationsEnabled}
-                  onChange={(checked) =>
-                     updateSetting("notifications_enabled", checked)
-                  }
+                  onChange={(checked) => updateSetting("notifications_enabled", checked)}
                />
             </SettingRow>
          </SettingGroup>
@@ -427,10 +384,7 @@ function TerminalPage({ isDark, settings, updateSetting }: PageProps) {
                   onChange={(e) =>
                      updateSetting("terminal_theme", {
                         ...settings.terminal_theme,
-                        cursor_style: e.target.value as
-                           | "block"
-                           | "underline"
-                           | "bar",
+                        cursor_style: e.target.value as "block" | "underline" | "bar",
                      })
                   }
                   className={inputClassName(isDark)}
@@ -543,8 +497,7 @@ function ShortcutRecorder({
    useEffect(() => {
       if (recording) {
          window.addEventListener("keydown", handleKeyDown, true);
-         return () =>
-            window.removeEventListener("keydown", handleKeyDown, true);
+         return () => window.removeEventListener("keydown", handleKeyDown, true);
       }
    }, [recording, handleKeyDown]);
 
@@ -622,12 +575,7 @@ function ShortcutsPage({ isDark, settings, updateSetting }: PageProps) {
                </div>
             </SettingRow>
          </SettingGroup>
-         <p
-            className={cn(
-               "text-[11px] px-1",
-               isDark ? "text-gray-500" : "text-gray-400"
-            )}
-         >
+         <p className={cn("text-[11px] px-1", isDark ? "text-gray-500" : "text-gray-400")}>
             Click the shortcut to record a new one.
          </p>
       </div>

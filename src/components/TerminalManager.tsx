@@ -3,12 +3,7 @@ import { TerminalHandle } from "./Terminal";
 import { TabBar } from "./TabBar";
 import { TerminalTab } from "./TerminalTab";
 import { Settings } from "./Settings";
-import {
-   lightTheme,
-   darkTheme,
-   getSystemTheme,
-   watchSystemTheme,
-} from "../lib/theme";
+import { lightTheme, darkTheme, getSystemTheme, watchSystemTheme } from "../lib/theme";
 import { invoke } from "@tauri-apps/api/core";
 import {
    isPermissionGranted,
@@ -34,9 +29,7 @@ export function TerminalManager() {
    const [nextTabId, setNextTabId] = useState(2);
    const [isDark, setIsDark] = useState(getSystemTheme() === "dark");
    const [showSettings, setShowSettings] = useState(false);
-   const terminalRefs = useRef<Map<number, React.RefObject<TerminalHandle>>>(
-      new Map()
-   );
+   const terminalRefs = useRef<Map<number, React.RefObject<TerminalHandle>>>(new Map());
 
    const notificationsEnabled = settings.notifications_enabled;
 
@@ -133,11 +126,7 @@ export function TerminalManager() {
    const handleTabClick = useCallback((tabId: number) => {
       setActiveTabId(tabId);
       // clear bell state when tab is clicked
-      setTabs((prev) =>
-         prev.map((tab) =>
-            tab.id === tabId ? { ...tab, hasBell: false } : tab
-         )
-      );
+      setTabs((prev) => prev.map((tab) => (tab.id === tabId ? { ...tab, hasBell: false } : tab)));
       // focus the terminal after switching tabs
       setTimeout(() => {
          terminalRefs.current.get(tabId)?.current?.focus();
@@ -156,10 +145,7 @@ export function TerminalManager() {
    }, []);
 
    const handleBell = useCallback(
-      async (
-         tabId: number,
-         notification?: { title: string; body: string }
-      ) => {
+      async (tabId: number, notification?: { title: string; body: string }) => {
          const tab = tabs.find((t) => t.id === tabId);
          if (!tab) return;
 
@@ -172,11 +158,7 @@ export function TerminalManager() {
          if (shouldNotify) {
             // set bell state (only if tab is not active)
             if (tabId !== activeTabId) {
-               setTabs((prev) =>
-                  prev.map((t) =>
-                     t.id === tabId ? { ...t, hasBell: true } : t
-                  )
-               );
+               setTabs((prev) => prev.map((t) => (t.id === tabId ? { ...t, hasBell: true } : t)));
             }
 
             // send notification only if enabled
@@ -187,9 +169,7 @@ export function TerminalManager() {
                   const title = notification?.title || "Terminal Bell";
                   const body =
                      notification?.body ||
-                     (isVisible
-                        ? `Activity in ${tab.title}`
-                        : "Terminal activity");
+                     (isVisible ? `Activity in ${tab.title}` : "Terminal activity");
                   sendNotification({ title, body });
                }
             }
@@ -269,11 +249,7 @@ export function TerminalManager() {
             handleNewTab();
          }
          // Cmd+Shift+W - close all tabs and hide
-         else if (
-            e.metaKey &&
-            e.shiftKey &&
-            e.key.toLowerCase() === "w"
-         ) {
+         else if (e.metaKey && e.shiftKey && e.key.toLowerCase() === "w") {
             e.preventDefault();
             handleCloseAllAndHide();
          }
@@ -350,10 +326,7 @@ export function TerminalManager() {
                <div className="flex-1 relative pb-1">
                   {tabs.map((tab) => {
                      if (!terminalRefs.current.has(tab.id)) {
-                        terminalRefs.current.set(
-                           tab.id,
-                           createRef<TerminalHandle>()
-                        );
+                        terminalRefs.current.set(tab.id, createRef<TerminalHandle>());
                      }
                      return (
                         <TerminalTab

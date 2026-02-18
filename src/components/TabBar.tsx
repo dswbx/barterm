@@ -37,9 +37,7 @@ export function TabBar({
           `}
                onClick={() => onTabClick(tab.id)}
             >
-               <span className="text-xs font-mono select-none">
-                  {tab.title}
-               </span>
+               <span className="text-xs font-mono select-none">{tab.title}</span>
                {tab.hasBell && (
                   <span className="w-1.5 h-1.5 bg-red-500 rounded-full" title="Unread bell" />
                )}

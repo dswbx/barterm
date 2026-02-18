@@ -1,10 +1,4 @@
-import {
-   createContext,
-   useContext,
-   useState,
-   useEffect,
-   ReactNode,
-} from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
 // terminal theming options
@@ -51,17 +45,12 @@ const defaultSettings: AppSettings = {
 
 interface SettingsContextType {
    settings: AppSettings;
-   updateSetting: <K extends keyof AppSettings>(
-      key: K,
-      value: AppSettings[K]
-   ) => Promise<void>;
+   updateSetting: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => Promise<void>;
    getSetting: <K extends keyof AppSettings>(key: K) => AppSettings[K];
    isLoaded: boolean;
 }
 
-const SettingsContext = createContext<SettingsContextType | undefined>(
-   undefined
-);
+const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 interface SettingsProviderProps {
    children: ReactNode;
@@ -75,8 +64,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
    useEffect(() => {
       const loadSettings = async () => {
          try {
-            const allSettings =
-               await invoke<Record<string, unknown>>("get_settings");
+            const allSettings = await invoke<Record<string, unknown>>("get_settings");
             console.log("Loaded settings:", allSettings);
 
             // merge with defaults (deep merge for nested objects)
@@ -123,8 +111,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       } catch (error) {
          console.error(`Failed to update setting ${String(key)}:`, error);
          // revert local state on error
-         const allSettings =
-            await invoke<Record<string, unknown>>("get_settings");
+         const allSettings = await invoke<Record<string, unknown>>("get_settings");
          setSettings({ ...defaultSettings, ...allSettings });
       }
    };
@@ -135,9 +122,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
    };
 
    return (
-      <SettingsContext.Provider
-         value={{ settings, updateSetting, getSetting, isLoaded }}
-      >
+      <SettingsContext.Provider value={{ settings, updateSetting, getSetting, isLoaded }}>
          {children}
       </SettingsContext.Provider>
    );

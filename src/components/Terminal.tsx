@@ -124,8 +124,7 @@ export const Terminal = forwardRef<TerminalHandle, TerminalProps>(
          term.parser.registerOscHandler(99, (data) => {
             // params and body are separated by the first ';'
             const sepIndex = data.indexOf(";");
-            const body =
-               sepIndex >= 0 ? data.substring(sepIndex + 1) : data;
+            const body = sepIndex >= 0 ? data.substring(sepIndex + 1) : data;
             notify("Terminal", body || "Notification");
             return true;
          });
@@ -175,8 +174,6 @@ export const Terminal = forwardRef<TerminalHandle, TerminalProps>(
          },
       }));
 
-      return (
-         <div ref={terminalRef} className="w-full h-full p-2 pl-2.5 pr-1.5" />
-      );
+      return <div ref={terminalRef} className="w-full h-full p-2 pl-2.5 pr-1.5" />;
    }
 );

@@ -12,7 +12,12 @@
       "tauri:build": "tauri build",
       "tauri:build:start": "tauri build --ci --no-sign && npm run tauri:start",
       "tauri:start": "./src-tauri/target/release/barterm",
-      "tauri:build:open": "tauri build --ci --no-sign && open ./src-tauri/target/release/bundle/macos/Barterm.app"
+      "tauri:build:open": "tauri build --ci --no-sign && open ./src-tauri/target/release/bundle/macos/Barterm.app",
+      "prepare": "husky",
+      "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,html}\""
+   },
+   "lint-staged": {
+      "*.{ts,tsx,js,jsx,json,css,html}": "prettier --write"
    },
    "dependencies": {
       "@base-ui/react": "^1.2.0",
@@ -36,7 +41,10 @@
       "@types/react-dom": "^18.3.1",
       "@vitejs/plugin-react": "^4.3.4",
       "autoprefixer": "^10.4.20",
+      "husky": "^9.1.7",
+      "lint-staged": "^16.2.7",
       "postcss": "^8.4.49",
+      "prettier": "^3.8.1",
       "tailwindcss": "^3.4.17",
       "typescript": "^5.7.2",
       "vite": "^6.0.3"
