@@ -490,11 +490,16 @@ function formatShortcutDisplay(shortcut: string): string {
       .split("+")
       .map((part) => {
          switch (part) {
-            case "Super": return "⌘";
-            case "Control": return "⌃";
-            case "Alt": return "⌥";
-            case "Shift": return "⇧";
-            default: return part;
+            case "Super":
+               return "⌘";
+            case "Control":
+               return "⌃";
+            case "Alt":
+               return "⌥";
+            case "Shift":
+               return "⇧";
+            default:
+               return part;
          }
       })
       .join("");
@@ -538,7 +543,8 @@ function ShortcutRecorder({
    useEffect(() => {
       if (recording) {
          window.addEventListener("keydown", handleKeyDown, true);
-         return () => window.removeEventListener("keydown", handleKeyDown, true);
+         return () =>
+            window.removeEventListener("keydown", handleKeyDown, true);
       }
    }, [recording, handleKeyDown]);
 
@@ -572,9 +578,7 @@ function ShortcutRecorder({
          >
             {recording ? "recording..." : formatShortcutDisplay(value)}
          </button>
-         {error && (
-            <span className="text-[11px] text-red-400">{error}</span>
-         )}
+         {error && <span className="text-[11px] text-red-400">{error}</span>}
       </div>
    );
 }
@@ -618,8 +622,13 @@ function ShortcutsPage({ isDark, settings, updateSetting }: PageProps) {
                </div>
             </SettingRow>
          </SettingGroup>
-         <p className={cn("text-[11px] px-1", isDark ? "text-gray-500" : "text-gray-400")}>
-            click the shortcut to record a new one
+         <p
+            className={cn(
+               "text-[11px] px-1",
+               isDark ? "text-gray-500" : "text-gray-400"
+            )}
+         >
+            Click the shortcut to record a new one.
          </p>
       </div>
    );
