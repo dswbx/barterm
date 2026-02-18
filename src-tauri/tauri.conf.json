@@ -1,6 +1,6 @@
 {
    "productName": "Barterm",
-   "version": "0.2.2",
+   "version": "0.2.3",
    "identifier": "com.barterm.app",
    "build": {
       "beforeDevCommand": "npm run dev",

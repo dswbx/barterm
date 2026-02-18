@@ -30,10 +30,17 @@ Run `git log` from the last tag (or all history if no tags exist) to collect com
 
 ### 4. Commit and tag
 
+Run these as separate commands (not chained), since the commit may trigger lint-staged hooks that need to finish before tagging:
+
 ```
 git add -A
 git commit -m "release vX.Y.Z"
-git tag vX.Y.Z
+```
+
+Then create the tag. Use `-m` to provide an inline message, otherwise git may try to open an editor (which fails in non-interactive terminals):
+
+```
+git tag -m "vX.Y.Z" vX.Y.Z
 ```
 
 ### 5. Push and create the GitHub release
