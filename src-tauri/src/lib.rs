@@ -3,6 +3,7 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, Wry,
 };
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 use tauri_plugin_store::StoreExt;
 
 #[cfg(target_os = "macos")]
@@ -180,6 +181,59 @@ fn set_window_opacity(app: AppHandle, opacity: f64) {
     }
 }
 
+// default shortcut for toggling the window
+const DEFAULT_TOGGLE_SHORTCUT: &str = "Shift+Super+T";
+
+// register (or re-register) the global toggle shortcut
+fn register_toggle_shortcut(app: &AppHandle, shortcut_str: &str) {
+    let _ = app.global_shortcut().unregister_all();
+
+    if let Err(e) = app.global_shortcut().on_shortcut(shortcut_str, |app, _shortcut, event| {
+        if event.state == ShortcutState::Pressed {
+            if let Some(tray) = app.try_state::<tauri::tray::TrayIcon>() {
+                toggle_window(app, &tray);
+            }
+        }
+    }) {
+        eprintln!("failed to register shortcut '{}': {}", shortcut_str, e);
+        if shortcut_str != DEFAULT_TOGGLE_SHORTCUT {
+            let _ = app.global_shortcut().on_shortcut(DEFAULT_TOGGLE_SHORTCUT, |app, _shortcut, event| {
+                if event.state == ShortcutState::Pressed {
+                    if let Some(tray) = app.try_state::<tauri::tray::TrayIcon>() {
+                        toggle_window(app, &tray);
+                    }
+                }
+            });
+        }
+    }
+}
+
+// command to update the toggle shortcut from the frontend
+#[tauri::command]
+fn set_toggle_shortcut(app: AppHandle, shortcut: String) -> Result<(), String> {
+    let _ = app.global_shortcut().unregister_all();
+
+    let app_clone = app.clone();
+    app.global_shortcut()
+        .on_shortcut(shortcut.as_str(), |app, _shortcut, event| {
+            if event.state == ShortcutState::Pressed {
+                if let Some(tray) = app.try_state::<tauri::tray::TrayIcon>() {
+                    toggle_window(app, &tray);
+                }
+            }
+        })
+        .map_err(|e| {
+            let _ = app_clone.global_shortcut().on_shortcut(DEFAULT_TOGGLE_SHORTCUT, |app, _shortcut, event| {
+                if event.state == ShortcutState::Pressed {
+                    if let Some(tray) = app.try_state::<tauri::tray::TrayIcon>() {
+                        toggle_window(app, &tray);
+                    }
+                }
+            });
+            format!("invalid shortcut: {}", e)
+        })
+}
+
 // save current window size to store
 fn save_window_size(app: &AppHandle, window: &tauri::WebviewWindow) {
     if let Ok(size) = window.outer_size() {
@@ -239,6 +293,7 @@ pub fn run() {
         .plugin(tauri_plugin_pty::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             close_window,
             save_size,
@@ -252,7 +307,8 @@ pub fn run() {
             get_settings,
             set_setting,
             get_setting,
-            set_window_opacity
+            set_window_opacity,
+            set_toggle_shortcut
         ])
         .setup(|app| {
             // set activation policy to Accessory (hide dock icon on macOS)
@@ -374,6 +430,15 @@ pub fn run() {
 
             // store tray icon in app state
             app.manage(tray);
+
+            // register global toggle shortcut (read from settings or use default)
+            let shortcut_str = store
+                .get("shortcuts")
+                .and_then(|v| v.get("toggle_window").cloned())
+                .and_then(|v| v.as_str().map(|s| s.to_string()))
+                .unwrap_or_else(|| DEFAULT_TOGGLE_SHORTCUT.to_string());
+
+            register_toggle_shortcut(app.handle(), &shortcut_str);
 
             Ok(())
         })

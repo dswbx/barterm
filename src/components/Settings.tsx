@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Switch } from "@base-ui/react/switch";
 import { useSettings } from "../contexts/SettingsContext";
 import { cn } from "../lib/cn";
 
-type SettingsPage = "general" | "terminal" | "about";
+type SettingsPage = "general" | "terminal" | "shortcuts" | "about";
 
 interface SettingsProps {
    isDark: boolean;
@@ -19,6 +19,7 @@ export function Settings({ isDark, onClose }: SettingsProps) {
    const pages: { id: SettingsPage; label: string }[] = [
       { id: "general", label: "General" },
       { id: "terminal", label: "Terminal" },
+      { id: "shortcuts", label: "Shortcuts" },
       { id: "about", label: "About" },
    ];
 
@@ -127,6 +128,13 @@ export function Settings({ isDark, onClose }: SettingsProps) {
                   )}
                   {activePage === "terminal" && (
                      <TerminalPage
+                        isDark={isDark}
+                        settings={settings}
+                        updateSetting={updateSetting}
+                     />
+                  )}
+                  {activePage === "shortcuts" && (
+                     <ShortcutsPage
                         isDark={isDark}
                         settings={settings}
                         updateSetting={updateSetting}
@@ -433,6 +441,186 @@ function TerminalPage({ isDark, settings, updateSetting }: PageProps) {
                </select>
             </SettingRow>
          </SettingGroup>
+      </div>
+   );
+}
+
+// convert a KeyboardEvent to a Tauri-compatible shortcut string
+// e.g. Cmd+Shift+T -> "Shift+Super+T"
+function keyEventToShortcut(e: KeyboardEvent): string | null {
+   const parts: string[] = [];
+
+   if (e.ctrlKey) parts.push("Control");
+   if (e.altKey) parts.push("Alt");
+   if (e.shiftKey) parts.push("Shift");
+   // metaKey = Cmd on macOS, Win on Windows
+   if (e.metaKey) parts.push("Super");
+
+   // ignore modifier-only keypresses
+   const ignored = new Set(["Control", "Alt", "Shift", "Meta", "Super"]);
+   if (ignored.has(e.key)) return null;
+
+   // map special keys to Tauri key names
+   const keyMap: Record<string, string> = {
+      " ": "Space",
+      ArrowUp: "ArrowUp",
+      ArrowDown: "ArrowDown",
+      ArrowLeft: "ArrowLeft",
+      ArrowRight: "ArrowRight",
+      Enter: "Enter",
+      Escape: "Escape",
+      Backspace: "Backspace",
+      Delete: "Delete",
+      Tab: "Tab",
+      Home: "Home",
+      End: "End",
+      PageUp: "PageUp",
+      PageDown: "PageDown",
+   };
+
+   const key = keyMap[e.key] ?? e.key.toUpperCase();
+   parts.push(key);
+
+   return parts.join("+");
+}
+
+// format a shortcut string for display (e.g. "Shift+Super+T" -> "⇧⌘T")
+function formatShortcutDisplay(shortcut: string): string {
+   return shortcut
+      .split("+")
+      .map((part) => {
+         switch (part) {
+            case "Super": return "⌘";
+            case "Control": return "⌃";
+            case "Alt": return "⌥";
+            case "Shift": return "⇧";
+            default: return part;
+         }
+      })
+      .join("");
+}
+
+function ShortcutRecorder({
+   isDark,
+   value,
+   onChange,
+}: {
+   isDark: boolean;
+   value: string;
+   onChange: (shortcut: string) => void;
+}) {
+   const [recording, setRecording] = useState(false);
+   const [error, setError] = useState<string | null>(null);
+   const buttonRef = useRef<HTMLButtonElement>(null);
+
+   const handleKeyDown = useCallback(
+      (e: KeyboardEvent) => {
+         if (!recording) return;
+         e.preventDefault();
+         e.stopPropagation();
+
+         const shortcut = keyEventToShortcut(e);
+         if (!shortcut) return;
+
+         // require at least one modifier
+         if (!e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey) {
+            setError("include at least one modifier key");
+            return;
+         }
+
+         setError(null);
+         setRecording(false);
+         onChange(shortcut);
+      },
+      [recording, onChange]
+   );
+
+   useEffect(() => {
+      if (recording) {
+         window.addEventListener("keydown", handleKeyDown, true);
+         return () => window.removeEventListener("keydown", handleKeyDown, true);
+      }
+   }, [recording, handleKeyDown]);
+
+   // cancel recording on blur
+   const handleBlur = () => {
+      setRecording(false);
+      setError(null);
+   };
+
+   return (
+      <div className="flex flex-col items-end gap-1">
+         <button
+            ref={buttonRef}
+            onBlur={handleBlur}
+            onClick={() => {
+               setRecording(true);
+               setError(null);
+               buttonRef.current?.focus();
+            }}
+            className={cn(
+               "min-w-[120px] px-3 py-1.5 rounded-md border text-[13px] text-center transition-colors",
+               "focus:outline-none",
+               recording
+                  ? isDark
+                     ? "border-[#007AFF] bg-[#007AFF]/10 text-[#007AFF]"
+                     : "border-[#007AFF] bg-[#007AFF]/10 text-[#007AFF]"
+                  : isDark
+                    ? "bg-[#1e1e1e] border-[#3a3a3a] text-white hover:border-[#555]"
+                    : "bg-[#ececec] border-[#d0d0d0] text-black hover:border-[#aaa]"
+            )}
+         >
+            {recording ? "recording..." : formatShortcutDisplay(value)}
+         </button>
+         {error && (
+            <span className="text-[11px] text-red-400">{error}</span>
+         )}
+      </div>
+   );
+}
+
+function ShortcutsPage({ isDark, settings, updateSetting }: PageProps) {
+   const [applyError, setApplyError] = useState<string | null>(null);
+
+   const handleShortcutChange = async (shortcut: string) => {
+      setApplyError(null);
+      try {
+         await invoke<void>("set_toggle_shortcut", { shortcut });
+         await updateSetting("shortcuts", {
+            ...settings.shortcuts,
+            toggle_window: shortcut,
+         });
+      } catch (e) {
+         setApplyError(String(e));
+      }
+   };
+
+   return (
+      <div className="space-y-4">
+         <SettingGroup isDark={isDark}>
+            <SettingRow isDark={isDark} last>
+               <SettingLabel
+                  isDark={isDark}
+                  title="Toggle Window"
+                  description="Show or hide the Barterm window"
+               />
+               <div className="flex flex-col items-end gap-1">
+                  <ShortcutRecorder
+                     isDark={isDark}
+                     value={settings.shortcuts.toggle_window}
+                     onChange={handleShortcutChange}
+                  />
+                  {applyError && (
+                     <span className="text-[11px] text-red-400 max-w-[180px] text-right">
+                        {applyError}
+                     </span>
+                  )}
+               </div>
+            </SettingRow>
+         </SettingGroup>
+         <p className={cn("text-[11px] px-1", isDark ? "text-gray-500" : "text-gray-400")}>
+            click the shortcut to record a new one
+         </p>
       </div>
    );
 }

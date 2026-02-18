@@ -8,6 +8,9 @@
     "shell:default",
     "pty:default",
     "core:window:allow-close",
-    "core:window:allow-hide"
+    "core:window:allow-hide",
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister",
+    "global-shortcut:allow-is-registered"
   ]
 }

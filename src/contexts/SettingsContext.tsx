@@ -22,6 +22,15 @@ export const defaultTerminalTheme: TerminalThemeSettings = {
    cursor_style: "block",
 };
 
+// shortcut settings
+export interface ShortcutSettings {
+   toggle_window: string;
+}
+
+export const defaultShortcuts: ShortcutSettings = {
+   toggle_window: "Shift+Super+T",
+};
+
 // define the settings structure
 export interface AppSettings {
    notifications_enabled: boolean;
@@ -29,6 +38,7 @@ export interface AppSettings {
    window_width?: number;
    window_height?: number;
    terminal_theme: TerminalThemeSettings;
+   shortcuts: ShortcutSettings;
 }
 
 // default settings
@@ -36,6 +46,7 @@ const defaultSettings: AppSettings = {
    notifications_enabled: true,
    window_opacity: 1.0,
    terminal_theme: { ...defaultTerminalTheme },
+   shortcuts: { ...defaultShortcuts },
 };
 
 interface SettingsContextType {
@@ -75,6 +86,10 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
                terminal_theme: {
                   ...defaultTerminalTheme,
                   ...((allSettings.terminal_theme as Partial<TerminalThemeSettings>) || {}),
+               },
+               shortcuts: {
+                  ...defaultShortcuts,
+                  ...((allSettings.shortcuts as Partial<ShortcutSettings>) || {}),
                },
             };
 
