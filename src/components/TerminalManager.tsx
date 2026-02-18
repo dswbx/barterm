@@ -3,6 +3,7 @@ import { TerminalHandle } from "./Terminal";
 import { TabBar } from "./TabBar";
 import { TerminalTab } from "./TerminalTab";
 import { Settings } from "./Settings";
+import { UpdateBadge } from "./UpdateBadge";
 import { lightTheme, darkTheme, getSystemTheme, watchSystemTheme } from "../lib/theme";
 import { invoke } from "@tauri-apps/api/core";
 import {
@@ -10,8 +11,12 @@ import {
    requestPermission,
    sendNotification,
 } from "@tauri-apps/plugin-notification";
+import { check, type Update } from "@tauri-apps/plugin-updater";
+import { relaunch } from "@tauri-apps/plugin-process";
 import { listen } from "@tauri-apps/api/event";
 import { useSettings } from "../contexts/SettingsContext";
+
+const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
 interface Tab {
    id: number;
@@ -29,9 +34,49 @@ export function TerminalManager() {
    const [nextTabId, setNextTabId] = useState(2);
    const [isDark, setIsDark] = useState(getSystemTheme() === "dark");
    const [showSettings, setShowSettings] = useState(false);
+   const [availableUpdate, setAvailableUpdate] = useState<Update | "simulated" | null>(null);
+   const [isUpdating, setIsUpdating] = useState(false);
    const terminalRefs = useRef<Map<number, React.RefObject<TerminalHandle>>>(new Map());
 
    const notificationsEnabled = settings.notifications_enabled;
+
+   // check for updates on mount and every hour
+   useEffect(() => {
+      const runCheck = async () => {
+         if (import.meta.env.DEV && import.meta.env.VITE_SIMULATE_UPDATE === "true") {
+            setAvailableUpdate("simulated");
+            return;
+         }
+         try {
+            const update = await check();
+            if (update?.available) setAvailableUpdate(update);
+         } catch {
+            // silently ignore - no network, updater not configured, etc.
+         }
+      };
+
+      runCheck();
+      const id = setInterval(runCheck, UPDATE_CHECK_INTERVAL_MS);
+      return () => clearInterval(id);
+   }, []);
+
+   const handleUpdate = useCallback(async () => {
+      if (!availableUpdate) return;
+      setIsUpdating(true);
+      try {
+         if (availableUpdate === "simulated") {
+            // in dev simulation, just clear the badge after a short delay
+            await new Promise((r) => setTimeout(r, 1500));
+            setAvailableUpdate(null);
+            setIsUpdating(false);
+            return;
+         }
+         await availableUpdate.downloadAndInstall();
+         await relaunch();
+      } catch {
+         setIsUpdating(false);
+      }
+   }, [availableUpdate]);
 
    // apply window opacity when settings are loaded
    useEffect(() => {
@@ -299,6 +344,9 @@ export function TerminalManager() {
       <div
          className={`h-screen w-full flex flex-col ${isDark ? "bg-gray-900" : "bg-gray-100"} fixed overflow-hidden overscroll-none rounded-xl`}
       >
+         {availableUpdate && (
+            <UpdateBadge isDark={isDark} onUpdate={handleUpdate} isUpdating={isUpdating} />
+         )}
          {showSettings ? (
             <Settings isDark={isDark} onClose={() => setShowSettings(false)} />
          ) : (
