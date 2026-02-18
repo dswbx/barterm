@@ -1,6 +1,6 @@
 {
    "name": "barterm",
-   "version": "0.1.2",
+   "version": "0.2.0",
    "description": "macOS menubar terminal app",
    "type": "module",
    "scripts": {
