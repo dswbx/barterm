@@ -1,6 +1,6 @@
 {
    "productName": "Barterm",
-   "version": "0.2.3",
+   "version": "0.2.4",
    "identifier": "com.barterm.app",
    "build": {
       "beforeDevCommand": "npm run dev",
@@ -19,6 +19,7 @@
          "icons/icon.ico"
       ],
       "resources": ["icons/icon-badge.png"],
+      "createUpdaterArtifacts": true,
       "macOS": {
          "minimumSystemVersion": "10.15"
       }
