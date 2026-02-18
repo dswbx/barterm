@@ -77,7 +77,7 @@ export function Settings({ isDark, onClose }: SettingsProps) {
                      isDark ? "text-gray-600" : "text-gray-400"
                   )}
                >
-                  Barterm 0.1.0
+                  Barterm {import.meta.env.VITE_VERSION}
                </div>
             </div>
          </div>
@@ -445,7 +445,7 @@ function AboutPage({ isDark }: { isDark: boolean }) {
                <SettingLabel
                   isDark={isDark}
                   title="Barterm"
-                  description="Version 0.1.0"
+                  description={`Version ${import.meta.env.VITE_VERSION}`}
                />
             </SettingRow>
          </SettingGroup>
